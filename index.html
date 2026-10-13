@@ -148,6 +148,7 @@
     <button class="btn go" id="btn-start">开始游戏</button>
     <div class="row">
       <button class="btn" id="btn-demo">🎬 演示模式</button>
+      <button class="btn" id="btn-water">🌊 防溺水特训</button>
       <button class="btn" id="btn-src0">📚 依据与来源</button>
       <button class="btn" id="btn-gal0">📖 知识图鉴</button>
       <button class="btn" id="btn-about0">ℹ 关于作品</button>
@@ -209,7 +210,12 @@
       </div>
       <div class="row" style="margin-top:8px">
         <button class="btn" id="btn-share">📋 复制成绩单</button>
+        <button class="btn" id="btn-water2">🌊 防溺水特训</button>
         <button class="btn" id="btn-about2">ℹ 关于作品</button>
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <canvas id="qr-res" width="148" height="148" style="background:#fff;border-radius:8px;image-rendering:pixelated"></canvas>
+        <div style="font-size:11px;color:#9fb4d8;margin-top:4px">📱 扫码即玩 · 转发给同学一起挑战</div>
       </div>
     </div>
   </div>
@@ -237,6 +243,10 @@
     <div class="card">
       <h3>ℹ 关于本作品</h3>
       <div id="about-body"></div>
+      <div style="text-align:center;margin-top:12px">
+        <canvas id="qr-about" width="148" height="148" style="background:#fff;border-radius:8px;image-rendering:pixelated"></canvas>
+        <div style="font-size:11px;color:#9fb4d8;margin-top:4px">📱 扫码即玩：https://mianxinghe.github.io/dian-yu-huo/</div>
+      </div>
       <div class="row" style="margin-top:10px">
         <button class="btn" id="btn-about-src">查看依据与来源</button>
         <button class="btn" id="btn-about-close">关闭</button>
@@ -342,6 +352,30 @@ const CORR=[
   CORR[10]=mk(i=> i===10?'~': i===11?'%': (i===13||i===27)?'?': i===14?'&': (i===16||i===23)?'~': i===19?'⌁': i===20?'m':'.');
   CORR[11]=mk(i=> i===4?'t': i===7?'&': (i===10||i===16||i===23)?'~': i===12?'⌁': i===17?'f': i===19?'?': i===21?'&': i===25?'⌁': i===29?'#':'.');
 })();
+
+/* 防溺水特训地图（水边）：'z'水面 'e'深水浮标 'j'警示牌 'y'救生圈 'q'草丛 'h'树 */
+const WATER=[
+"##############################",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzezzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
+"#............................#",
+"#....q...j......y............#",
+"#...........................q#",
+"#..h......................h..#",
+"#............................#",
+"#............................#",
+"#........q...........q.......#",
+"#............................#",
+"##############################",
+];
 
 /* 实验室地图 */
 const LAB=[
@@ -484,11 +518,46 @@ const CLSH=[
   right:'最后离开者检查断电：空调、多媒体、饮水机、插座总电源全部关闭。',
   src:'依据：应急管理部《家庭防火》第10条“离开住处前检查用电器具是否断电”'},
 ];
+/* 隐患（防溺水特训关） */
+const WATERH=[
+ {id:16,x:6,y:10,name:'私自下水野泳',icon:'🏊',
+  hint:'安全员提醒：水库边那几个想下水的人，看住他们。',
+  why:'私自下水是溺水首因：自然水域水下地形复杂、有暗流深坑，体温骤降还会引发抽筋。教育部防溺水“六不准”第一条即“不私自下水游泳”。',
+  right:'不到河塘、水库野泳；游泳去有救生员的正规场馆，并结伴且有成年人看护。',
+  src:'依据：教育部《致全国中小学生家长的一封信》防溺水“六不准”；应急管理部防溺水科普',
+  act:{q:'同学约你傍晚去水库“野泳”凉快一下，你会？',opts:['拒绝，并建议去正规游泳馆','跟着去，只在浅水区待着','带上游泳圈就去'],ans:0}},
+ {id:17,x:9,y:12,name:'无视警示进入危险水域',icon:'⚠️',
+  hint:'安全员提醒：那块“禁止游泳”的牌子，不是摆设。',
+  why:'“不到无安全设施、无救援人员的水域游泳”是“六不准”第4条。立有警示牌的水域往往有深坑、暗流或水下障碍物，出事无人施救。',
+  right:'看到警示牌立即远离；不在无救援人员、无安全设施的水域下水。',
+  src:'依据：教育部防溺水“六不准”第4条；应急管理部防溺水科普',
+  act:{q:'水边立着“禁止游泳”的警示牌，你会？',opts:['立即远离，并劝阻同伴','只看一眼，继续玩水','觉得碍事把牌子挪开'],ans:0}},
+ {id:18,x:12,y:10,name:'结伴擅自下水',icon:'👥',
+  hint:'安全员提醒：人多不等于安全。',
+  why:'“不擅自与他人结伴游泳”是“六不准”第2条。同学相约时容易互相怂恿，且现场没有成年人看护，一旦出事无法及时救援。',
+  right:'结伴≠安全：下水必须有成年人看护，且只在正规安全水域。',
+  src:'依据：教育部防溺水“六不准”第2、3条',
+  act:{q:'几个同学说“人多没事”，准备一起下水，你会？',opts:['劝阻同伴，并告知老师或家长','人多就安全，跟着下水','在岸边帮他们看衣服'],ans:0}},
+ {id:19,x:19,y:10,name:'盲目下水施救',icon:'🆘',
+  hint:'安全员提醒：有人落水了——先别跳下去！',
+  why:'“不擅自下水施救”是“六不准”第6条。下水施救者常被落水者死死抱住，手拉手人链更会连环拖入水中，造成多人溺亡。',
+  right:'大声呼救、拨打110/119，用救生圈、竹竿、绳索在岸上施救；自身安全最重要。',
+  src:'依据：教育部“正确施救”口诀（“搭救伙伴靠智慧，自身安全最重要”）；应急管理部防溺水科普',
+  act:{q:'同伴落水挣扎，你会？',opts:['大声呼救并拨110/119，抛救生圈或竹竿','立刻跳下水去拉他','手拉手结成“人链”下水救'],ans:0}},
+ {id:20,x:5,y:12,name:'水边湿滑处打闹',icon:'🥾',
+  hint:'安全员提醒：岸边青苔很滑，别在这儿追跑。',
+  why:'教育部指出“在水边玩耍、捡拾落水物品”是溺水常见原因之一；岸边青苔、淤泥、陡坡极易让人滑入深水。',
+  right:'水边不追逐打闹；远离湿滑陡坡与长满青苔的岸边，不捡拾落水物品。',
+  src:'依据：教育部《致全国中小学生家长的一封信》“发生溺水死亡的原因”；国家消防救援局防溺水提示',
+  act:{q:'同学在湿滑岸边追逐打闹，你会？',opts:['制止他们，退到安全的岸上','加入一起玩','在旁边看着'],ans:0}},
+];
+
 /* 场景注册表 */
 const SCENES={
  dorm:{name:'🏠 宿舍隐患排查', map:DORM, hazards:HAZARDS, next:'lab', start:[14,16]},
  lab:{name:'🧪 实验室隐患排查', map:LAB, hazards:LABH, next:'class', start:[14,17]},
  class:{name:'🏫 教室隐患排查', map:CLASS, hazards:CLSH, next:null, start:[14,13]},
+ water:{name:'🌊 防溺水特训', map:WATER, hazards:WATERH, next:null, training:true, start:[10,17]},
 };
 const TOTAL_H=HAZARDS.length+LABH.length+CLSH.length;
 /* 隐患数据一角（官方实测/数据，知识卡与图鉴共用） */
@@ -509,6 +578,11 @@ const HZ_DATA={
  13:'饮水机缺水干烧时，加热元件过热可能引燃周边可燃物',
  14:'热成像实测：空载充电器也比环境温度高约 5℃——长期不拔=持续耗电发热',
  15:'应急管理部行为规范第10条：离开住处前检查用电器具是否断电、总电源是否切断',
+ 16:'教育部防溺水“六不准”第1条：不私自下水游泳——私自下水是溺水首因',
+ 17:'“六不准”第4条：不到无安全设施、无救援人员的水域游泳',
+ 18:'“六不准”第2条：不擅自与他人结伴游泳——结伴不等于安全',
+ 19:'“六不准”第6条：不擅自下水施救——手拉手救援易致连环溺水',
+ 20:'教育部：在水边玩耍、捡拾落水物品是溺水常见原因之一',
 };
 const QUIZ=[
  {q:'宿舍电线短路起火，你的第一步应该是？',
@@ -611,6 +685,10 @@ const FAKES={
   {x:10,y:16,name:'多媒体讲台',msg:'讲台本身没问题——问题出在下方插排过载和下课不断电。'},
   {x:27,y:2,name:'空调',msg:'空调正常使用没问题——但教室无人时要断电。'},
  ],
+ water:[
+  {x:16,y:12,name:'救生圈',msg:'救生圈是救命装备——发现有人落水时，从岸上抛给他，比自己下水安全得多。'},
+  {x:26,y:14,name:'岸边大树',msg:'树本身不危险——但不要攀爬水边树木，万一失足落水很难自救。'},
+ ],
 };
 
 /* 依据页 */
@@ -628,6 +706,8 @@ const SOURCES=[
  {t:'宁波大学宿舍火灾通报：系电热毯导致（央广网 2025-11-25）',u:'https://news.cnr.cn/native/gd/20251125/t20251125_527441232.shtml'},
  {t:'《高等学校实验室安全规范》（教科信厅函〔2023〕5号）：实验室配备消防设施、隐患排查闭环管理（西安文理学院转发全文）',u:'https://gz.xawl.edu.cn/info/1226/4091.htm'},
  {t:'《高等学校实验室工作规程》（国家教委令第20号）第二十五条：定期检查防火、防爆、防事故安全措施',u:'https://www.gov.cn/zhengce/1992-06/27/content_5713357.htm'},
+ {t:'教育部《致全国中小学生家长的一封信》：防溺水“六不准”“四个牢记”“正确施救”口诀',u:'https://www.zhaoqing.gov.cn/zqjyj/gkmlpt/content/2/2521/post_2521331.html'},
+ {t:'应急管理部防溺水安全知识科普（广东省消防救援总队转载 2026-04-14）',u:'https://gd.119.gov.cn/xfkp/zjts/content/post_4883579.html'},
  {t:'中国互联网联合辟谣平台：湿毛巾只对初期火灾有用，不可凭它穿越浓烟（2025-11-28）',u:'https://www.piyao.org.cn/20251128/28e5fd10229b45c2b2fc6b666e63924e/c.html'},
  {t:'广东消防：身上着火就地打滚压灭火焰、打滚速度不要过快（2026-07-22）',u:'https://gd.119.gov.cn/xfkp/zjts/content/post_4932483.html'},
  {t:'GB 2099.7-2024《家用和类似用途延长线插座 安全技术规范》（2025-08-01实施）',u:'https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=D4F79BC19C597DBE4AE413C0F3EC7BAC'},
@@ -720,6 +800,7 @@ let state={
  fx:null,                // 答题过场动画
  qDone:[],               // 走廊答题节点完成情况
  corT:90,                // 火场逃生倒计时
+ waterDone:false,        // 防溺水特训是否完成
  items:[],               // 逃生道具
  misPress:0,             // 误判次数（按E无目标）
  fade:{a:0,dir:0,cb:null},
@@ -731,6 +812,8 @@ let fxP=[];              // 过场粒子
 let fxToken=0;           // fx 代际令牌（演示模式防竞态）
 let evCur=null, evTick=null, crkTimer=null;
 let best=0; try{ best=parseInt(localStorage.getItem('dyh_best')||'0',10); }catch(e){ best=0; }
+let waterDoneFlag=false; try{ waterDoneFlag=localStorage.getItem('dyh_water')==='1'; }catch(e){ waterDoneFlag=false; }
+state.waterDone=waterDoneFlag;
 
 /* ================= 工具与音频 ================= */
 const $=id=>document.getElementById(id);
@@ -776,6 +859,7 @@ function resetGame(){
   state.timeLeft=480; state.over=false; state.px=14; state.py=16; state.dir=0; state.moving=false;
   state.qDone=Array(QUIZ.length).fill(false); state.corT=90; smokeSlow=0;
   state.items=[]; state.misPress=0; state.fakeSeen=[]; state.fade={a:0,dir:0,cb:null};
+  state.waterDone=waterDoneFlag;
   evCur=null; bgmStop();
   DOORS.forEach(d=>d.failed=false); GATES.forEach(g=>g.open=false);
   $('hint').style.display='none';
@@ -819,7 +903,7 @@ function startTimer(){
 }
 
 /* ================= 交互 ================= */
-const SOLID='#BDNTKCFERAVZOMJQG&~';
+const SOLID='#BDNTKCFERAVZOMJQG&~zjh';
 function isDoorTile(x,y){ return state.scene==='corridor' && x===29 && y>=8 && y<=10; }
 function interact(){
   if(overlayOpen()) return;
@@ -887,7 +971,8 @@ function openHazard(h){
     state.found.push(h.id); state.sceneFound++; state.score+=100; sFound();
     if(state.sceneFound>=curHazards.length){
       const sc=SCENES[state.scene];
-      if(sc.next){ toast('本场景排查完成！'); setTimeout(()=>fadeOut(()=>{ enterScene(sc.next); fadeIn(); }),500); }
+      if(sc.training){ setTimeout(()=>fadeOut(()=>{ finishTraining(); fadeIn(); }),500); }
+      else if(sc.next){ toast('本场景排查完成！'); setTimeout(()=>fadeOut(()=>{ enterScene(sc.next); fadeIn(); }),500); }
       else setTimeout(()=>fadeOut(()=>{ fireTrigger(null); fadeIn(); }),500);
     }
     else showHint();
@@ -1069,6 +1154,8 @@ function showResult(){
   else badges.push('<span class="badge miss">📚 知识达人：图鉴 '+galGot+'/'+(TOTAL_H+QUIZ.length)+'（未达成）</span>');
   if(fast){ bonus+=100; badges.push('<span class="badge won">⚡ 极速逃生 · 余时≥40s +100</span>'); }
   else badges.push('<span class="badge miss">⚡ 极速逃生：余时≥40s（未达成）</span>');
+  if(state.waterDone) badges.push('<span class="badge won">🌊 防溺水特训 · 已完成</span>');
+  else badges.push('<span class="badge miss">🌊 防溺水特训：未挑战（标题页可进入）</span>');
   state.score+=bonus;
   const max=baseMax+300;
   const pct=state.score/max;
@@ -1085,17 +1172,21 @@ function showResult(){
     '<li>学生宿舍禁止违规使用大功率电器（教育部、公安部令第28号）</li>'+
     '<li>起火先断电再报警，带电火灾严禁泼水</li>'+
     '<li>湿毛巾作用有限、防烟面罩更佳；浓烟不穿越、固守待援</li>'+
-    '<li>不乘电梯、按烟气情况低姿，沿安全通道撤离</li></ul>';
+    '<li>不乘电梯、按烟气情况低姿，沿安全通道撤离</li></ul>'+
+    '<div style="margin-top:10px;padding:9px;border-left:3px solid #3ddc84;background:rgba(61,220,132,.08);border-radius:0 6px 6px 0;font-size:12.5px;line-height:1.7">'+
+    '🔔 <b>人人讲安全、个个会应急</b>——把这份成绩单发给室友和同学，一起排查身边的隐患。<br>'+
+    '点「📋 复制成绩单」即可分享，或让同学扫下方二维码直接挑战。</div>';
+  drawQr($('qr-res'));
   const rcv=$('route-cv'); if(rcv) rcv.dataset.t0=animT;
   bgmStart('win'); setTimeout(bgmStop,3600);
   showOv('result',true); sRight();
 }
 /* ================= 知识图鉴 ================= */
 function renderGallery(){
-  const total=TOTAL_H+QUIZ.length;
-  const got=state.found.length+state.qDone.filter(Boolean).length;
-  let html='<div style="color:#8fd3ff;margin:6px 0">🚨 隐患图鉴（'+state.found.length+'/'+TOTAL_H+'）</div><div class="grid">';
-  [...HAZARDS,...LABH,...CLSH].forEach(h=>{
+  const total=TOTAL_H+WATERH.length+QUIZ.length;
+  const got=state.found.filter(id=>id<16).length+state.found.filter(id=>id>=16).length+state.qDone.filter(Boolean).length;
+  let html='<div style="color:#8fd3ff;margin:6px 0">🚨 隐患图鉴（'+state.found.length+'/'+(TOTAL_H+WATERH.length)+'）</div><div class="grid">';
+  [...HAZARDS,...LABH,...CLSH,...WATERH].forEach(h=>{
     const un=state.found.includes(h.id);
     html+='<div class="gcard'+(un?'':' lock')+'"><div class="gi">'+h.icon+'</div><div class="gn">'+(un?h.name:'？？？')+'</div><div class="gd">'+(un?(HZ_DATA[h.id]||h.right):'排查发现后解锁')+'</div></div>';
   });
@@ -1111,10 +1202,23 @@ function renderGallery(){
 $('btn-gal0').onclick=()=>{ renderGallery(); showOv('gallery',true); };
 $('btn-gal2').onclick=()=>{ renderGallery(); showOv('gallery',true); };
 $('btn-gal-close').onclick=()=>showOv('gallery',false);
-$('best-line').textContent= best>0 ? '🏅 最佳纪录：'+best+' 分' : '';
-
+$('best-line').textContent='';
+updateBestLine();
 /* ================= 依据页 ================= */
-$('src-list').innerHTML=SOURCES.map(s=>'<div class="src-item"><b>'+s.t+'</b><br><a href="'+s.u+'" target="_blank" rel="noopener">'+s.u+'</a></div>').join('');
+function srcKind(t){
+  if(/消防法|中华人民共和国.*法》/.test(t)) return 'law';
+  if(/GB\s?\d/.test(t)) return 'gb';
+  if(/令|规定|规范|规程/.test(t)) return 'rule';
+  return 'kp';
+}
+(function renderSources(){
+  const kinds={law:0,rule:0,gb:0,kp:0};
+  SOURCES.forEach(s=>kinds[srcKind(s.t)]++);
+  const stats='<div style="margin-bottom:10px;padding:8px;background:rgba(143,211,255,.08);border-left:3px solid #8fd3ff;border-radius:0 6px 6px 0;line-height:1.7">'+
+    '📚 <b>合规统计</b>：法律 <b>'+kinds.law+'</b> 部 · 部门规章/规范 <b>'+kinds.rule+'</b> 部 · 国家标准 <b>'+kinds.gb+'</b> 项 · 官方科普与通报 <b>'+kinds.kp+'</b> 条 · 合计 <b>'+SOURCES.length+'</b> 条来源<br>'+
+    '<span style="font-size:11px;color:#9fb4d8">每条知识点均标注出处，链接可点开核对原文</span></div>';
+  $('src-list').innerHTML=stats+SOURCES.map(s=>'<div class="src-item"><b>'+s.t+'</b><br><a href="'+s.u+'" target="_blank" rel="noopener">'+s.u+'</a></div>').join('');
+})();
 $('btn-src2').onclick=()=>showOv('sources',true);
 $('btn-src0').onclick=()=>showOv('sources',true);
 $('btn-src-close').onclick=()=>showOv('sources',false);
@@ -1287,13 +1391,16 @@ function renderAbout(){
   '<div class="sec" style="color:#8fd3ff">作品信息</div>'+
   '<div>《电与火之间——宿舍用电安全·像素逃生》｜AI类·交互作品（像素小游戏）｜2026年山东省大学生应急科普原创作品征集活动 · 主题：青春护航 应急有我</div>'+
   '<div class="sec" style="color:#8fd3ff">玩法说明</div>'+
-  '<div>移动：方向键 / WASD / 虚拟按键；调查：E / 空格 / A键。三个场景排查 16 处用电隐患 → 火情突发 → 火场逃生（10 道决策题 + 道具抉择 + 路线选择）→ 复盘结算。支持简单/困难双难度、知识图鉴、成就徽章。</div>'+
+  '<div>移动：方向键 / WASD / 虚拟按键；调查：E / 空格 / A键。三个场景排查 16 处用电隐患 → 火情突发 → 火场逃生（10 道决策题 + 道具抉择 + 路线选择）→ 复盘结算；另设「🌊 防溺水特训」独立关口（水边 5 处风险）。支持简单/困难双难度、知识图鉴（31 张卡片）、成就徽章、演示模式。</div>'+
+  '<div class="sec" style="color:#8fd3ff">内容覆盖（对应征集方向）</div>'+
+  '<div>用火用电用气安全 ✓ ｜ 消防安全 ✓ ｜ 实验室安全 ✓ ｜ 校园安全 ✓ ｜ 自救互救技能 ✓ ｜ 防溺水 ✓ ｜ 事故灾难应对与逃生 ✓</div>'+
   '<div class="sec" style="color:#8fd3ff">创作思路</div>'+
   '<div>“排查隐患→隐患成灾→火场逃生”叙事闭环，让玩家亲手“酿成”火情再亲手逃生；双难度、道具抉择、随机坠落事件提升可玩性；全部知识点锚定法律法规与官方科普，条条可溯源。</div>'+
   '<div class="sec" style="color:#8fd3ff">AI 使用说明</div>'+
   '<div>本作品全部代码、文案、像素美术、音效均由生成式人工智能 DeepSeek 创作，AIGC 内容占比 100%。模型服务名称：求索对话 DeepSeek Chat；备案编号：Beijing-DeepseekChat-202404280016（国家网信办生成式人工智能服务备案）。已按《人工智能生成合成内容标识办法》添加显式标识（常驻“AI生成”角标）与隐式标识（meta 标签声明）。</div>'+
   '<div class="sec" style="color:#8fd3ff">人工参与</div>'+
   '<div>选题与需求确认、权威依据人工核验、试玩反馈与细节调整、部署上线操作。</div>';
+  drawQr($('qr-about'));
 }
 $('btn-about0').onclick=()=>{ renderAbout(); showOv('about',true); };
 $('btn-about2').onclick=()=>{ renderAbout(); showOv('about',true); };
@@ -1407,6 +1514,80 @@ document.addEventListener('keydown',e=>{
     if(!['dialog','quiz'].some(id=>$(id).classList.contains('show'))) showOv('pause',true);
   }
 });
+
+/* ================= 分享二维码（纯代码绘制，无图片素材） ================= */
+const QR_ROWS=[
+'000000000000000000000000000000000',
+'000000000000000000000000000000000',
+'001111111000110111111100111111100',
+'001000001011001111110100100000100',
+'001011101001111000001000101110100',
+'001011101000000011101110101110100',
+'001011101011111111000100101110100',
+'001000001000010101111110100000100',
+'001111111010101010101010111111100',
+'000000000000100101011100000000000',
+'001010101001110101010110001001000',
+'001011000101111110110010100100100',
+'001001101010010000011000000011100',
+'001011000001111111110011001001000',
+'000101011010000101111011100101100',
+'001101100110101000000011100100100',
+'001101101101000100110010011101100',
+'001011000001110110110010010101000',
+'000011001111011111110111100101100',
+'000111110010100000100001100110100',
+'001000101100001100001001011001100',
+'000100100100000111011111111101000',
+'001010001001111010110011111000000',
+'000000000011101000100110001011100',
+'001111111000110100010110101101100',
+'001000001000001001011010001100000',
+'001011101010101001111011111000000',
+'001011101000100100100100011011100',
+'001011101011110100110000011100100',
+'001000001001100011111110000001000',
+'001111111011001110110111010001100',
+'000000000000000000000000000000000',
+'000000000000000000000000000000000'];
+function drawQr(cv){
+  if(!cv) return;
+  const c=cv.getContext('2d'); c.imageSmoothingEnabled=false;
+  const n=QR_ROWS.length, s=4, off=Math.floor((cv.width-n*s)/2);
+  c.fillStyle='#ffffff'; c.fillRect(0,0,cv.width,cv.height);
+  c.fillStyle='#101a38';
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++) if(QR_ROWS[y][x]==='1') c.fillRect(off+x*s,off+y*s,s,s);
+}
+/* ================= 防溺水特训（独立关口） ================= */
+function startTraining(){
+  resetGame();
+  showOv('title',false); showOv('result',false);
+  $('hint').style.display='none';
+  enterScene('water');
+  toast('🌊 防溺水特训开始：排查水边 5 处风险');
+}
+function finishTraining(){
+  state.waterDone=true; waterDoneFlag=true;
+  try{ localStorage.setItem('dyh_water','1'); }catch(e){}
+  const wasWater=$('water-done-line');
+  bgmStart('win'); setTimeout(bgmStop,3000);
+  $('dlg-name').textContent='🌊 防溺水特训完成！';
+  $('dlg-body').innerHTML=
+    '<div class="sec">✅ 你已经掌握</div>'+
+    '<div>• 不私自下水、不擅自结伴下水（六不准第1、2条）<br>'+
+    '• 无安全设施、无救援人员的水域绝不下水（第4条）<br>'+
+    '• 同伴落水：先呼救、打110/119，用救生圈/竹竿岸上施救，<b>不擅自下水施救</b>（第6条）<br>'+
+    '• 水边湿滑处不追逐打闹</div>'+
+    '<div class="data-line">📊 数据一角：教育部明确指出，溺水是青少年意外死亡的“头号杀手”</div>'+
+    '<div class="src">依据：教育部《致全国中小学生家长的一封信》防溺水“六不准”；应急管理部防溺水科普</div>';
+  showOv('dialog',true);
+  $('dlg-ok').onclick=()=>{ showOv('dialog',false); showOv('title',true); syncControls(); updateBestLine(); };
+}
+$('btn-water').onclick=startTraining;
+$('btn-water2').onclick=()=>{ showOv('result',false); startTraining(); };
+function updateBestLine(){
+  $('best-line').textContent=(best>0?'🏅 最佳纪录：'+best+' 分':'')+(state.waterDone?'　｜　🌊 防溺水特训 ✅ 已完成':'');
+}
 
 /* ================= 输入 ================= */
 const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
@@ -1540,8 +1721,9 @@ function drawTile(x,y,ch){
       R(7,2,2,12,'#2e3550'); R(2,7,12,2,'#2e3550'); R(2,14,12,2,'#3d4568');
       R(0,0,16,1,'#3d4568');
       break;
-    case '.': // 地板：木纹
+    case '.': // 地板/沙滩
       if(state.scene==='corridor'){ R(0,0,16,16,'#3a3f52'); R(0,0,16,1,'#454b60'); R(8,0,1,16,'#33384a'); }
+      else if(state.scene==='water'){ R(0,0,16,16,'#d9c68f'); R(0,0,16,1,'#e6d7a8'); R(4,6,2,2,'#c9b47f'); R(11,10,3,2,'#c9b47f'); R(7,13,2,2,'#c9b47f'); }
       else{ R(0,0,16,16,'#6b5a43'); R(0,13,16,3,'#5d4e3a'); R(8,0,1,13,'#5d4e3a'); R(3,5,2,1,'#776450'); R(12,9,2,1,'#776450'); }
       break;
     case 'B': // 床
@@ -1697,6 +1879,29 @@ function drawTile(x,y,ch){
         R(0,0,16,16,pu?'rgba(255,95,95,.28)':'rgba(255,95,95,.12)');
         ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.fillStyle=pu?'#ff5f5f':'#ff8c8c';
         ctx.fillText('!',px+8,py+12); }
+      break;
+    case 'z': // 水面（波纹动画）
+      { const w=Math.floor(animT/12+x*3+y*2)%2;
+        R(0,0,16,16,'#2a6fa8'); R(0,0,16,3,'#3f86bf'); R(0,13,16,3,'#1e5a8c');
+        R(0,w?5:7,16,1,'#7fb8dd'); R(3,w?10:9,8,1,'#5fa2cf'); R(11,w?3:4,4,1,'#9fd3f2'); }
+      break;
+    case 'e': // 深水区浮标
+      R(6,5,4,7,'#ff8c42'); R(6,5,4,2,'#ffd166'); R(2,1,12,4,'#1e5a8c'); R(5,12,6,1,'#8fd3ff'); R(7,2,2,2,'#e63946');
+      break;
+    case 'j': // 禁止游泳警示牌
+      R(7,9,2,7,'#8a6a4a'); R(2,1,12,9,'#e8e2d0'); R(2,1,12,1,'#c0392b');
+      R(4,3,8,1,'#c0392b'); R(7,5,3,1,'#c0392b'); R(8,7,1,1,'#c0392b'); R(8,3,1,1,'#c0392b');
+      break;
+    case 'y': // 救生圈
+      R(2,2,12,12,'#ff8c42'); R(5,5,6,6,'#e8e2d0'); R(3,2,10,2,'#ffffff'); R(3,12,10,2,'#ffffff');
+      R(2,3,2,10,'#ffffff'); R(12,3,2,10,'#ffffff'); R(5,5,6,6,'#2a6fa8');
+      break;
+    case 'q': // 草丛
+      R(0,8,16,8,'#3f7a3f'); R(2,4,2,5,'#4f9a4f'); R(6,2,2,7,'#4f9a4f'); R(10,5,2,4,'#4f9a4f');
+      R(13,7,2,3,'#4f9a4f'); R(0,12,16,1,'#2f5a2f'); R(4,6,2,3,'#5aa85a');
+      break;
+    case 'h': // 岸边大树
+      R(6,9,4,7,'#5a3c24'); R(3,1,10,9,'#2f6b3f'); R(5,2,6,2,'#3f8a4f'); R(2,5,3,3,'#3f8a4f'); R(11,5,3,3,'#3f8a4f');
       break;
     default: R(0,0,16,16,'#0a0d1a');
   }
