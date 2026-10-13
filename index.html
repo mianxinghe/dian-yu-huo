@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="generator" content="DeepSeek（北京深度求索人工智能基础技术研究有限公司，备案号 Beijing-DeepseekChat-202404280016）">
+<meta name="AIGC-标识" content="本作品为生成式人工智能创作内容，AIGC占比100%，已按《人工智能生成合成内容标识办法》《网络安全技术 人工智能生成合成内容标识方法》添加显式与隐式标识">
+<title>电与火之间·像素逃生 | 宿舍用电安全互动小游戏</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    background:#0a0d1a; color:#e8ecf5; font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  #wrap { position:relative; width:100%; max-width:640px; }
+  canvas#game {
+    display:block; width:100%; height:auto; background:#141a2e;
+    image-rendering:pixelated; image-rendering:crisp-edges; border-radius:4px;
+  }
+  .ovl { position:absolute; inset:0; display:none; z-index:20; }
+  .ovl.show { display:flex; }
+  /* ============ 标题页 ============ */
+  #title {
+    background:linear-gradient(180deg,#0d1230 0%,#1a1030 100%);
+    flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:16px;
+  }
+  #title h1 { font-size:30px; letter-spacing:4px; color:#ffd166; text-shadow:0 3px 0 #b34700, 0 0 14px rgba(255,150,60,.6); }
+  #title .sub { font-size:13px; color:#9fb4d8; letter-spacing:2px; }
+  #title .act { font-size:11px; color:#7d8db0; margin-top:2px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .pick { display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .pick label { font-size:12px; color:#9fb4d8; }
+  .btn {
+    border:2px solid #3c4a7a; background:#1b2440; color:#e8ecf5; font-size:15px;
+    padding:9px 18px; border-radius:8px; cursor:pointer; letter-spacing:1px; font-family:inherit;
+  }
+  .btn:active { transform:translateY(1px); }
+  .btn.sel { border-color:#ffd166; background:#3a2c10; color:#ffd166; box-shadow:0 0 10px rgba(255,200,90,.45); }
+  .btn.go { font-size:19px; padding:12px 42px; border-color:#ff8c42; background:linear-gradient(180deg,#b34700,#8c3300); color:#fff; }
+  .avatar { width:56px; height:56px; image-rendering:pixelated; border:2px solid #3c4a7a; border-radius:6px; background:#141a2e; }
+  .avatar.sel { border-color:#ffd166; }
+  /* ============ 对话框/知识卡 ============ */
+  #dialog {
+    background:rgba(4,6,16,.82); align-items:center; justify-content:center; padding:14px;
+  }
+  #dialog .card {
+    width:100%; max-width:520px; background:#101a38; border:2px solid #ffd166; border-radius:10px;
+    padding:14px 14px 12px; font-size:13.5px; line-height:1.65; max-height:86%; overflow:auto;
+  }
+  #dialog h3 { color:#ffd166; font-size:17px; margin-bottom:6px; }
+  #dialog .sec { margin:7px 0 2px; font-size:12px; color:#8fd3ff; }
+  #dialog .src { margin-top:8px; font-size:11px; color:#a8b6d4; border-top:1px dashed #33406a; padding-top:6px; }
+  #dialog button { margin-top:10px; }
+  /* ============ 逃生问答 ============ */
+  #quiz { background:rgba(4,6,16,.88); flex-direction:column; align-items:center; justify-content:center; padding:14px; }
+  #quiz .card { width:100%; max-width:520px; background:#101a38; border:2px solid #4aa3ff; border-radius:10px; padding:14px; font-size:14px; }
+  #quiz h3 { color:#8fd3ff; font-size:13px; margin-bottom:8px; }
+  #quiz .q { font-size:15.5px; line-height:1.5; margin-bottom:10px; }
+  .opt { display:block; width:100%; text-align:left; margin:6px 0; border:2px solid #3c4a7a; background:#16204a; color:#e8ecf5; padding:9px 12px; border-radius:8px; font-size:14px; cursor:pointer; font-family:inherit; }
+  .opt.correct { border-color:#3ddc84; background:#0e2e1c; }
+  .opt.wrong { border-color:#ff5f5f; background:#3a1414; }
+  .exp { display:none; margin-top:10px; background:#0c1530; border:1px solid #33406a; border-radius:8px; padding:10px; font-size:13px; line-height:1.6; }
+  .exp.show { display:block; }
+  .exp .ok { color:#3ddc84; } .exp .no { color:#ff8c8c; }
+  .exp .src { font-size:11px; color:#a8b6d4; margin-top:6px; border-top:1px dashed #33406a; padding-top:6px; }
+  /* ============ 起火过场 ============ */
+  #fire { background:rgba(30,2,2,.9); flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:16px; }
+  #fire .big { font-size:20px; color:#ffd166; letter-spacing:2px; }
+  #fire .msg { font-size:13.5px; color:#ffc9a3; line-height:1.7; max-width:440px; }
+  .flames { display:flex; gap:6px; height:70px; align-items:flex-end; }
+  .flame { width:22px; background:linear-gradient(180deg,#ffe066,#ff8c42 55%,#e63946); border-radius:3px 3px 2px 2px; animation:flick 0.35s infinite alternate; }
+  .flame:nth-child(2) { height:85%; animation-delay:.1s; } .flame:nth-child(3) { height:70%; animation-delay:.2s; } .flame:nth-child(4) { height:90%; animation-delay:.05s; } .flame:nth-child(5) { height:60%; animation-delay:.15s; }
+  @keyframes flick { from { transform:scaleY(1); } to { transform:scaleY(.72) translateY(6px); } }
+  /* ============ 复盘/结算 ============ */
+  #result { background:rgba(4,6,16,.92); flex-direction:column; align-items:center; padding:14px; }
+  #result .card { width:100%; max-width:520px; background:#101a38; border:2px solid #3ddc84; border-radius:10px; padding:14px; font-size:13.5px; line-height:1.6; max-height:90%; overflow:auto; }
+  #result h3 { text-align:center; color:#ffd166; font-size:18px; }
+  #result .scoreline { text-align:center; font-size:15px; margin:6px 0; }
+  #result .route { margin:10px 0; }
+  #result .route .steps { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  #result .route .chip { border:2px solid #3ddc84; color:#3ddc84; padding:4px 8px; border-radius:6px; font-size:12px; }
+  #result .route .bad { border-color:#ff5f5f; color:#ff8c8c; text-decoration:line-through; }
+  #result ul { margin:8px 0 0 18px; }
+  #result li { margin:3px 0; font-size:12.5px; }
+  /* ============ 依据页 ============ */
+  #sources { background:rgba(4,6,16,.94); flex-direction:column; align-items:center; padding:14px; }
+  #sources .card { width:100%; max-width:560px; background:#101a38; border:2px solid #8fd3ff; border-radius:10px; padding:14px; font-size:12px; line-height:1.6; max-height:90%; overflow:auto; }
+  #sources h3 { color:#8fd3ff; margin-bottom:8px; }
+  #sources .src-item { margin:7px 0; padding-bottom:7px; border-bottom:1px dashed #33406a; }
+  #sources .src-item b { color:#ffd166; }
+  #sources .src-item .u { color:#8fd3ff; word-break:break-all; }
+  /* 图鉴 */
+  #gallery { background:rgba(4,6,16,.95); flex-direction:column; align-items:center; padding:14px; }
+  #gallery .card { width:100%; max-width:620px; background:#101a38; border:2px solid #8fd3ff; border-radius:10px; padding:14px; font-size:12px; max-height:92%; overflow:auto; }
+  #gallery h3 { color:#8fd3ff; margin-bottom:8px; }
+  #gallery .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; }
+  #gallery .gcard { background:#0c1530; border:1px solid #33406a; border-radius:8px; padding:8px; min-height:76px; }
+  #gallery .gcard.lock { opacity:.38; filter:grayscale(1); }
+  #gallery .gcard .gi { font-size:18px; }
+  #gallery .gcard .gn { color:#ffd166; font-size:12px; margin:3px 0; }
+  #gallery .gcard .gd { color:#a8b6d4; font-size:10.5px; line-height:1.5; }
+  .data-line { margin-top:6px; font-size:11.5px; color:#ffe9ad; background:rgba(255,209,102,.08); border-left:3px solid #ffd166; padding:4px 8px; border-radius:0 6px 6px 0; }
+  .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:8px 0; }
+  .badge { border:2px solid #3c4a7a; background:#0c1530; border-radius:8px; padding:4px 10px; font-size:12px; color:#9fb4d8; }
+  .badge.won { border-color:#ffd166; color:#ffd166; background:#2a2410; }
+  .badge.miss { border-color:#5a6478; color:#5a6478; }
+  /* ============ 通用 ============ */
+  .ai-badge { position:absolute; right:6px; bottom:6px; z-index:40; font-size:10px; color:#c9d4ee; background:rgba(10,14,30,.75); border:1px solid #4a5b8f; border-radius:4px; padding:2px 6px; pointer-events:none; }
+  .hint-line { position:absolute; left:8px; top:30px; z-index:30; font-size:11px; color:#ffd166; background:rgba(10,14,30,.7); border:1px solid #5a4a2a; padding:3px 8px; border-radius:6px; max-width:70%; pointer-events:none; display:none; }
+  #mute { position:absolute; left:6px; bottom:6px; z-index:40; font-size:12px; background:rgba(10,14,30,.75); color:#c9d4ee; border:1px solid #4a5b8f; border-radius:6px; padding:3px 8px; cursor:pointer; }
+  #pad { position:absolute; left:10px; bottom:10px; z-index:35; display:none; gap:4px; }
+  #pad button { width:44px; height:44px; background:rgba(20,26,50,.85); color:#cfe0ff; border:2px solid #3c4a7a; border-radius:10px; font-size:18px; }
+  #btnA { position:absolute; right:14px; bottom:14px; z-index:35; display:none; width:56px; height:56px; border-radius:50%; background:rgba(255,140,66,.85); color:#fff; border:2px solid #ffd166; font-size:16px; }
+  @media (pointer:coarse), (max-width:560px) { #pad { display:grid; grid-template-columns:44px 44px 44px; grid-template-rows:44px 44px; } #pad .up{grid-area:1/2;} #pad .lf{grid-area:2/1;} #pad .dn{grid-area:2/2;} #pad .rt{grid-area:2/3;} #btnA{ display:block; } }
+  #toast { position:absolute; left:50%; top:16%; transform:translateX(-50%); z-index:38; background:rgba(10,14,30,.9); color:#ffd166; border:1px solid #5a4a2a; padding:6px 14px; border-radius:8px; font-size:13px; display:none; pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game" width="960" height="640"></canvas>
+
+  <!-- 标题页 -->
+  <div id="title" class="ovl show">
+    <h1>电与火之间</h1>
+    <div class="sub">宿舍用电安全 · 像素逃生</div>
+    <div class="act">2026年山东省大学生应急科普原创作品征集活动<br>主题：青春护航 应急有我</div>
+    <div class="pick">
+      <label>选择难度</label>
+      <div class="row">
+        <button class="btn" id="mode-easy">简单 · 无限时+提示</button>
+        <button class="btn" id="mode-hard">困难 · 限时6分钟</button>
+      </div>
+    </div>
+    <div class="pick">
+      <label>选择角色</label>
+      <div class="row">
+        <div class="pick"><canvas class="avatar" id="av-m" width="56" height="56"></canvas><span style="font-size:11px;color:#9fb4d8">男同学</span></div>
+        <div class="pick"><canvas class="avatar" id="av-f" width="56" height="56"></canvas><span style="font-size:11px;color:#9fb4d8">女同学</span></div>
+      </div>
+    </div>
+    <button class="btn go" id="btn-start">开始游戏</button>
+    <div class="row">
+      <button class="btn" id="btn-demo">🎬 演示模式</button>
+      <button class="btn" id="btn-src0">📚 依据与来源</button>
+      <button class="btn" id="btn-gal0">📖 知识图鉴</button>
+      <button class="btn" id="btn-about0">ℹ 关于作品</button>
+    </div>
+    <div id="best-line" style="font-size:11px;color:#7d8db0"></div>
+    <div style="font-size:10px;color:#5a6a94">本作品由生成式人工智能（DeepSeek）创作 · AI生成标识见右下角</div>
+  </div>
+
+  <!-- 知识卡 -->
+  <div id="dialog" class="ovl">
+    <div class="card">
+      <h3 id="dlg-name"></h3>
+      <div id="dlg-body"></div>
+      <button class="btn" id="dlg-ok">已了解 ✓</button>
+    </div>
+  </div>
+
+  <!-- 逃生问答 -->
+  <div id="quiz" class="ovl">
+    <div class="card">
+      <h3 id="quiz-head"></h3>
+      <div class="q" id="quiz-q"></div>
+      <div id="quiz-opts"></div>
+      <div class="exp" id="quiz-exp"></div>
+      <button class="btn" id="quiz-next" style="display:none;margin-top:10px">下一题 →</button>
+    </div>
+  </div>
+
+  <!-- 起火过场 -->
+  <div id="fire" class="ovl">
+    <div class="flames"><div class="flame"></div><div class="flame"></div><div class="flame"></div><div class="flame"></div><div class="flame"></div></div>
+    <div class="big">⚠ 火情突发 ⚠</div>
+    <div class="msg" id="fire-msg"></div>
+    <button class="btn go" id="btn-fire-next">进入火场逃生</button>
+  </div>
+
+  <!-- 复盘/结算 -->
+  <div id="result" class="ovl">
+    <div class="card">
+      <h3 id="res-title"></h3>
+      <div class="scoreline" id="res-score"></div>
+      <div class="route">
+        <b style="color:#8fd3ff">逃生路线复盘</b>
+        <div class="steps">
+          <span class="chip">断电·报警</span><span class="chip">判烟低姿·勿恋物</span><span class="chip">手背试门温</span><span class="chip">安全通道·勿乘电梯</span><span class="chip">室外集合</span>
+          <span class="chip bad">乘电梯</span><span class="chip bad">跳窗</span><span class="chip bad">躲衣柜</span>
+        </div>
+      </div>
+      <div id="res-recap"></div>
+      <div id="res-badges" class="badges"></div>
+      <div class="route">
+        <b style="color:#8fd3ff">逃生路线复盘</b>
+        <canvas id="route-cv" width="460" height="74" style="width:100%;image-rendering:pixelated"></canvas>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="btn-again">再玩一次</button>
+        <button class="btn" id="btn-src2">查看依据与来源</button>
+        <button class="btn" id="btn-gal2">知识图鉴</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="btn-share">📋 复制成绩单</button>
+        <button class="btn" id="btn-about2">ℹ 关于作品</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 依据页 -->
+  <div id="sources" class="ovl">
+    <div class="card">
+      <h3>📚 知识点依据与官方来源（部分）</h3>
+      <div id="src-list"></div>
+      <button class="btn" id="btn-src-close" style="margin-top:10px">关闭</button>
+    </div>
+  </div>
+
+  <!-- 知识图鉴 -->
+  <div id="gallery" class="ovl">
+    <div class="card">
+      <h3>📖 知识图鉴（<span id="gal-count"></span>）</h3>
+      <div id="gal-list"></div>
+      <button class="btn" id="btn-gal-close" style="margin-top:10px">关闭</button>
+    </div>
+  </div>
+
+  <!-- 关于作品 -->
+  <div id="about" class="ovl">
+    <div class="card">
+      <h3>ℹ 关于本作品</h3>
+      <div id="about-body"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btn-about-src">查看依据与来源</button>
+        <button class="btn" id="btn-about-close">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 暂停菜单 -->
+  <div id="pause" class="ovl">
+    <div class="card" style="text-align:center">
+      <h3>⏸ 游戏暂停</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0">
+        <button class="btn" id="btn-resume">▶ 继续游戏</button>
+        <button class="btn" id="btn-restart">🔄 重新开始</button>
+        <button class="btn" id="btn-pause-mute">🔊 声音开关</button>
+        <button class="btn" id="btn-pause-gal">📖 知识图鉴</button>
+        <button class="btn" id="btn-pause-about">ℹ 关于作品</button>
+      </div>
+      <div style="font-size:11px;color:#7d8db0">按 ESC 关闭菜单</div>
+    </div>
+  </div>
+
+  <!-- 案例还原 -->
+  <div id="case" class="ovl">
+    <div class="card" style="text-align:center">
+      <h3>🎬 案例还原：违规电热毯引发的宿舍火灾</h3>
+      <canvas id="case-cv" width="480" height="240" style="width:100%;image-rendering:pixelated;background:#141a2e;border-radius:6px"></canvas>
+      <div id="case-cap" style="font-size:13px;color:#ffd166;margin:8px 0;min-height:20px"></div>
+      <button class="btn" id="btn-case-close">关闭</button>
+    </div>
+  </div>
+
+  <div class="ai-badge">AI生成</div>
+  <div class="hint-line" id="hint"></div>
+  <button id="mute">🔊</button>
+  <button id="btn-pause" style="position:absolute;right:6px;top:26px;z-index:35;background:rgba(10,14,30,.75);color:#c9d4ee;border:1px solid #4a5b8f;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer">⏸</button>
+  <div id="demo-sub" style="position:absolute;left:50%;transform:translateX(-50%);bottom:14px;z-index:36;display:none;background:rgba(8,12,26,.92);color:#ffe9ad;border:1px solid #ffd166;padding:5px 16px;border-radius:8px;font-size:12.5px;max-width:90%;text-align:center"></div>
+  <button id="btn-demo-exit" style="position:absolute;left:6px;top:26px;z-index:36;display:none;background:rgba(230,57,70,.85);color:#fff;border:1px solid #ffd166;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer">✕ 退出演示</button>
+  <div id="toast"></div>
+  <div id="pad">
+    <button class="up">▲</button><button class="lf">◀</button><button class="dn">▼</button><button class="rt">▶</button>
+  </div>
+  <button id="btnA">E</button>
+</div>
+<script>
+'use strict';
+/* ================= 常量与数据 ================= */
+const TILE=16, COLS=30, ROWS=20;
+const cvs=document.getElementById('game'), ctx=cvs.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+ctx.scale(2,2);   // 高清画布 960x640，逻辑坐标仍为 480x320，画面像素减半更精细
+
+/* 宿舍地图：'#'墙 'w'窗 'B'床 'p'枕 'b'被 'o'手机 'S'床上插排 'D'书桌 's'桌上插排 'C'椅 'u'水杯 'w2'水渍 'x'破线 'K'水壶 'N'床头柜 'T'衣柜 'r'地毯 '.'地板 '='门 */
+const DORM=[
+"###wwwwwww####################",
+"#.........................TT.#",
+"#.........................TT.#",
+"#.........N..................#",
+"#..BBBBBBB...................#",
+"#..Bbbbbbo...................#",
+"#..BbbSbbb...................#",
+"#.............................",
+"#....................DsDDDDD..",
+"#...................C..u......",
+"#......................v.....#",
+"#............................#",
+"#..............K.............#",
+"#.............rrr............#",
+"#.............rrr............#",
+"#...x........................#",
+"#............................#",
+"#............................#",
+"#............................#",
+"##############################",
+];
+/* 走廊地图：'~'火墙(阻挡) '%'浓烟(减速) '&'断梁(阻挡) '?'答题节点 */
+const CORR=[
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"...?..&...~.?...~.?..&.~.?....",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+"##############################",
+];
+/* 运行时程序化生成关键三行：确保节点/闸门/道具/火苗位置绝对对齐 */
+(function(){
+  const mk=(fn)=>{ let s=''; for(let i=0;i<30;i++) s+=fn(i); return s; };
+  CORR[9]= mk(i=> i===8||i===15||i===21?'?': (i===10||i===16||i===23)?'~': i===19?'⌁':'.');
+  CORR[10]=mk(i=> i===10?'~': i===11?'%': (i===13||i===27)?'?': i===14?'&': (i===16||i===23)?'~': i===19?'⌁': i===20?'m':'.');
+  CORR[11]=mk(i=> i===4?'t': i===7?'&': (i===10||i===16||i===23)?'~': i===12?'⌁': i===17?'f': i===19?'?': i===21?'&': i===25?'⌁': i===29?'#':'.');
+})();
+
+/* 实验室地图 */
+const LAB=[
+"##############################",
+"#.FF.......................Z.#",
+"#.FF.........................#",
+"#............................#",
+"#......................V.s...#",
+"#....DEDDADYDDDR.............#",
+"#............................#",
+"#............................#",
+"#............................#",
+"#.........x..................#",
+"#............................#",
+"#....DDsDDDDDDDDDDODDD.......#",
+"#............................#",
+"#.............rrr............#",
+"#.............rrr............#",
+"#............................#",
+"#............................#",
+"#............................#",
+"#............................#",
+"##############################",
+];
+/* 教室地图 */
+const CLASS=[
+"##########GGGGGGGGGG##########",
+"#............................#",
+"#.J........................Q.#",
+"#............................#",
+"#............................#",
+"#............................#",
+"#............................#",
+"#.....DDDDDDDDDDDDDDDDDD.....#",
+"#............................#",
+"#.....DDDDDDDDDoDDDDDDDDD....#",
+"#............................#",
+"#.....DDDDDDDDDDDDDDDDDD.....#",
+"#............................#",
+"#............................#",
+"#............................#",
+"#............................#",
+"#.........MMs................#",
+"#.........MM.................#",
+"#............................#",
+"##############################",
+];
+const HAZARDS=[
+ {id:0,x:22,y:8,name:'插线板过载',icon:'🔌',
+  hint:'宿管阿姨：书桌上那个插线板，插头是不是有点挤？',
+  why:'同一插线板同时接入多个大功率电器，总功率超过额定值，线路过载发热，可引发短路甚至起火（消防实测：过载电线温度可达217℃并打火）。',
+  right:'大功率电器“专插专用”；插线板不串联、不超负荷使用；选购符合 GB 2099.7-2024 新国标的产品。',
+  src:'依据：应急管理部《如何安全使用插座？》；国家消防救援局2025年火灾数据（电气故障占30.8%）；GB 2099.7-2024',
+  act:{q:'发现插线板插满了大功率插头，你会？',opts:['把插头拔下，错开使用','再加一条插线板串联继续插','用电风扇给插线板降温'],ans:0}},
+ {id:1,x:8,y:5,name:'床上充电',icon:'📱',
+  hint:'宿管阿姨：床上那部手机，充电线还插着吧？',
+  why:'手机放在被褥上充电，热量积聚易引燃织物；充电器长期不拔持续带电，实测充电线破损短路后4分钟温度升至53℃并持续上升。',
+  right:'充电时远离被褥等可燃物；充满即拔、人走断电；不用劣质充电器。',
+  src:'依据：应急管理部《未拔充电器，客厅被烧光！》（2026-09-22，短路4分钟升至53℃实测）',
+  act:{q:'室友的手机在被窝里充电，你会？',opts:['拔掉充电器，放到桌上充','把被子掀开继续充','把充电器塞进被窝“保温”'],ans:0}},
+ {id:2,x:4,y:15,name:'电线破损',icon:'⚡',
+  hint:'宿管阿姨：墙边那根电线，外皮好像破了。',
+  why:'绝缘层破损使导线裸露，易发生漏电、短路，短路电火花可引燃周边可燃物。',
+  right:'立即停用并更换合格电线；不私拉乱接；电器线路安装使用须符合消防技术标准。',
+  src:'依据：《中华人民共和国消防法》第二十七条；应急管理部插座安全科普'},
+ {id:3,x:15,y:12,name:'违规大功率电器',icon:'🫖',
+  hint:'宿管阿姨：地上那个电热水壶，是违禁电器吧？',
+  why:'学生宿舍属于人员密集场所，规章明确禁止违规使用大功率电器；电热器具功率大、易过载跳闸起火（2025年11月宁波大学宿舍火灾即因电热毯引发）。',
+  right:'宿舍内不存放、不使用大功率及电热器具，使用公共开水房与公用电器。',
+  src:'依据：《高等学校消防安全管理规定》（教育部、公安部令第28号）第十八条',
+  act:{q:'宿舍里出现了电热水壶，你会？',opts:['上交宿管或带回家，改用开水房','藏进衣柜备用','趁查寝前偷偷烧水'],ans:0}},
+ {id:4,x:6,y:6,name:'插线板压在被褥上',icon:'🛏️',
+  hint:'宿管阿姨：被子下面是不是还压着个插线板？',
+  why:'插线板工作发热，紧贴被褥等易燃物，热量无法散出，极易引燃起火。',
+  right:'插线板固定在通风、远离易燃物的位置使用。',
+  src:'依据：中国消防《插线板使用都该注意啥》；许昌消防“专插专用”科普'},
+ {id:5,x:23,y:9,name:'水近电源',icon:'💧',
+  hint:'宿管阿姨：插座旁边那个水杯，可别洒了。',
+  why:'液体溅入插座易造成短路、漏电；湿手接触电器有触电风险。',
+  right:'电源附近不摆放液体，保持干燥；湿手不碰电器与插头。',
+  src:'依据：应急管理部《如何安全使用插座？》'},
+];
+
+/* 隐患（实验室关） */
+const LABH=[
+ {id:6,x:7,y:5,name:'加热设备旁放易燃物',icon:'🔥',
+  hint:'实验员提醒：电炉旁边那堆试剂和纸张，是不是太近了？',
+  why:'电炉等加热设备高温表面可能引燃附近的易燃溶剂、纸张；加热设备周围必须保持清洁、无易燃物。',
+  right:'加热设备周围不存放易燃物；使用结束及时断电，待冷却后再离开。',
+  src:'依据：《高等学校实验室安全规范》（教科信厅函〔2023〕5号）；《消防法》第二十七条',
+  act:{q:'加热实验前发现电炉旁堆着易燃试剂，你会？',opts:['先移开易燃物再加热','继续加热，做完再收拾','把试剂挪开一点就行'],ans:0}},
+ {id:7,x:7,y:11,name:'插排过载·私拉乱接',icon:'🔌',
+  hint:'实验员提醒：实验台上那个插排，插了多少台设备？',
+  why:'多台设备共用一个插线板、线路私拉乱接，电流过载发热，易短路起火。',
+  right:'设备“专插专用”；插线板不串联、不超负荷；不私拉乱接电线。',
+  src:'依据：应急管理部《如何安全使用插座？》；国家消防救援局2025年火灾数据'},
+ {id:8,x:18,y:11,name:'设备无人看管运行',icon:'⏳',
+  hint:'实验员提醒：烘箱还开着，人呢？',
+  why:'烘箱、加热设备运行中无人值守，一旦过热故障无人处置，极易引发火灾。',
+  right:'设备运行必须有人值守；离开实验室做到“人走断电、停机断水”。',
+  src:'依据：《高等学校实验室安全规范》第十条；应急管理部“人走断电”规范',
+  act:{q:'烘箱还在运行，但你急着去吃饭，你会？',opts:['关停设备、断电后再离开','让同学“顺便”看一眼','开着烘箱锁门离开'],ans:0}},
+ {id:9,x:10,y:5,name:'酒精灯旁有可燃物',icon:'🕯️',
+  hint:'实验员提醒：酒精灯旁边那沓纸，收一收。',
+  why:'明火与纸张、试剂距离过近，易被引燃；使用明火必须远离可燃物。',
+  right:'明火与可燃物保持安全距离；用毕及时熄灭，远离火源存放。',
+  src:'依据：《消防法》第二十一条；《高等学校实验室工作规程》（国家教委令第20号）第二十五条'},
+ {id:10,x:25,y:4,name:'插座靠近水槽',icon:'💧',
+  hint:'实验员提醒：水槽旁边那个插座，溅上水就麻烦了。',
+  why:'水溅入插座易短路漏电；湿手操作电器有触电风险。',
+  right:'插座远离水源、保持干燥；湿手不操作电器。',
+  src:'依据：应急管理部《如何安全使用插座？》'},
+ {id:11,x:10,y:9,name:'电线破损·线路杂乱',icon:'⚡',
+  hint:'实验员提醒：地上那根线，外皮都破了。',
+  why:'绝缘破损的导线易漏电、短路打火；线路杂乱缠绕不利于散热。',
+  right:'定期检查更换线路；不乱拉乱接，线路规范敷设。',
+  src:'依据：《消防法》第二十七条'},
+];
+/* 隐患（教室关） */
+const CLSH=[
+ {id:12,x:12,y:16,name:'讲台插座过载',icon:'🔌',
+  hint:'安全员提醒：讲台下方插排，插头是不是太多了？',
+  why:'多媒体设备与充电设备共用一个插排，过载发热易起火。',
+  right:'讲台用电“专插专用”；不超负荷、不串联。',
+  src:'依据：应急管理部《如何安全使用插座？》'},
+ {id:13,x:2,y:2,name:'饮水机长期通电',icon:'🚰',
+  hint:'安全员提醒：教室没人了，饮水机还开着。',
+  why:'饮水机长期通电、缺水干烧，元件过热可能引发火灾。',
+  right:'教室长期无人或夜间关闭饮水机电源。',
+  src:'依据：应急管理部“人走断电”规范；《消防法》第二十七条'},
+ {id:14,x:10,y:9,name:'充电器长期不拔',icon:'📱',
+  hint:'安全员提醒：课桌下那个充电器，插了好几天了吧？',
+  why:'充电器长期插电持续带电发热，破损短路4分钟可升至53℃（官方实测）。',
+  right:'充满即拔、人走断电；不用劣质充电器。',
+  src:'依据：应急管理部《未拔充电器，客厅被烧光！》（2026-09-22实测）',
+  act:{q:'下课离开教室，充电器还插在插座上，你会？',opts:['拔下充电器带走','留在插座上，明天继续用','只拔手机，充电器留着'],ans:0}},
+ {id:15,x:27,y:2,name:'人走不断电',icon:'💤',
+  hint:'安全员提醒：下课了，空调、多媒体、插排都还通着电。',
+  why:'教室无人时电器仍通电，故障隐患无人发现，易酿成火灾。',
+  right:'最后离开者检查断电：空调、多媒体、饮水机、插座总电源全部关闭。',
+  src:'依据：应急管理部《家庭防火》第10条“离开住处前检查用电器具是否断电”'},
+];
+/* 场景注册表 */
+const SCENES={
+ dorm:{name:'🏠 宿舍隐患排查', map:DORM, hazards:HAZARDS, next:'lab', start:[14,16]},
+ lab:{name:'🧪 实验室隐患排查', map:LAB, hazards:LABH, next:'class', start:[14,17]},
+ class:{name:'🏫 教室隐患排查', map:CLASS, hazards:CLSH, next:null, start:[14,13]},
+};
+const TOTAL_H=HAZARDS.length+LABH.length+CLSH.length;
+/* 隐患数据一角（官方实测/数据，知识卡与图鉴共用） */
+const HZ_DATA={
+ 0:'实测：4台大功率电器同插一个插线板，电线温度达 217.2℃ 并发生打火（南京消防实验）',
+ 1:'实测：充电线破损短路后，充电器 4 分钟升至 53℃ 且持续升温（应急管理部 2026-09）',
+ 2:'2025年全国接报火灾 84.1 万起，其中电气故障引发占 30.8%（国家消防救援局）',
+ 3:'2025年11月宁波大学宿舍火灾，通报起火原因正是学生使用的电热毯',
+ 4:'电气故障长期居火灾原因首位——插线板贴着被褥，等于火源贴着燃料',
+ 5:'水是导体：液体溅入插座会短路，湿手触碰电器有触电风险',
+ 6:'《高等学校实验室安全规范》：隐患整改实行“排查、登记、报告、整改、复查”闭环管理',
+ 7:'消防救援机构官方提示：大功率电器应“专插专用”，插线板不串联、不超负荷',
+ 8:'安全规范要求：设备运行必须有人值守，离开做到“人走断电、停机断水”',
+ 9:'酒精灯倾倒会形成“流淌火”，蔓延极快——用毕立即熄灭，远离纸张',
+ 10:'插座远离水源是实验室基础规范；湿手不操作任何电器',
+ 11:'《消防法》第二十七条：电器线路的安装使用必须符合消防技术标准',
+ 12:'多台多媒体设备共用一个插排=过载发热，讲台下方是教室最易起火点之一',
+ 13:'饮水机缺水干烧时，加热元件过热可能引燃周边可燃物',
+ 14:'热成像实测：空载充电器也比环境温度高约 5℃——长期不拔=持续耗电发热',
+ 15:'应急管理部行为规范第10条：离开住处前检查用电器具是否断电、总电源是否切断',
+};
+const QUIZ=[
+ {q:'宿舍电线短路起火，你的第一步应该是？',
+  opts:['立即切断宿舍电源总闸并拨打119','用水泼灭火焰','打开门窗通风','先收拾贵重物品'],
+  ans:0,
+  exp:{ok:'正确！先断电、再报警。',no:'带电火灾严禁泼水！第一步是切断电源并报警。',why:'电器起火先断电可防止触电与蔓延；《消防法》规定任何人发现火灾都应当立即报警。'},
+  src:'依据：《中华人民共和国消防法》第四十四条'},
+ {q:'撤离时关于姿势和防护，哪个说法符合最新官方口径？',
+  opts:['必须用湿毛巾捂口鼻弯腰匍匐','按烟气情况判断：烟未及口鼻可直立快走，烟下沉则低姿','湿毛巾能过滤有毒气体，可放心穿越浓烟','叠八层湿毛巾滤烟效果最好'],
+  ans:1,
+  exp:{ok:'正确！姿势要看烟气情况。',no:'湿毛巾作用有限，且不能过滤有毒成分。',why:'2025年中国消防明确：烟气未影响口鼻呼吸时直立行走更快；湿毛巾仅对初期火灾有辅助作用，不要为找毛巾耽误逃生。'},
+  src:'依据：中国消防（国家消防救援局）2025年口径；国家消防救援局逃生6要点'},
+ {q:'逃到房门前，应该先做什么？',
+  opts:['直接开门冲出去','大力拍门呼救','用手背试探门把手温度','从门缝塞衣物出去'],
+  ans:2,
+  exp:{ok:'正确！先试门温。',no:'贸然开门可能被门外高温烟气灼伤。',why:'门把手发烫说明门外火势大，应退回室内，用湿布堵门缝固守待援。'},
+  src:'依据：国家消防救援局《楼房火灾逃生6要点》第1条'},
+ {q:'身上衣物着火，正确做法是？',
+  opts:['奔跑呼救让风吹灭','就地打滚压灭火焰','用手快速拍打','站定不动等救援'],
+  ans:1,
+  exp:{ok:'正确！就地打滚。',no:'奔跑会让火烧得更旺。',why:'应急管理部：就地打滚压灭火苗，不宜带火奔跑；打滚速度不要过快，以切断氧气。'},
+  src:'依据：应急管理部《家庭防火 学习消防知识做起！》'},
+ {q:'撤离路线，正确的选择是？',
+  opts:['乘电梯快速下楼','翻窗跳下','走安全疏散通道和楼梯','躲进衣柜等救援'],
+  ans:2,
+  exp:{ok:'正确！走安全通道。',no:'火灾时电梯会断电停运、烟囱效应致命，绝不能乘。',why:'沿疏散指示标志走安全楼梯；电梯断电被困风险极大；跳窗、躲衣柜均不可取。'},
+  src:'依据：《消防法》第二十八条；国家消防救援局逃生6要点第5、6条'},
+ {q:'火势太大无法逃出时，应该？',
+  opts:['打开门窗散烟','关闭房门、湿布堵门缝，在窗口挥物呼救','躲进密闭衣柜','从阳台爬外墙下楼'],
+  ans:1,
+  exp:{ok:'正确！固守待援。',no:'打开门窗会引火入室。',why:'关闭房门并用湿毛巾、衣物封堵门缝延缓烟火；在窗前挥动醒目衣物、用手电筒标明位置等待救援。'},
+  src:'依据：国家消防救援局《楼房火灾逃生6要点》第2、4条'},
+ {q:'判断：湿毛巾能过滤火场烟雾中的有毒气体，可以放心用它穿越浓烟。',
+  type:'judge',opts:['正确','错误'],ans:1,
+  exp:{ok:'判断正确！',no:'这是误区。',why:'湿毛巾只能过滤部分固体烟尘，不能过滤有毒气体，作用有限；看到浓烟切勿强行穿越，应优先走无烟路线或固守待援。'},
+  src:'依据：中国互联网联合辟谣平台（2025-11-28）；中国消防2025年口径'},
+ {q:'判断：火灾时乘电梯下楼比走楼梯更快更安全。',
+  type:'judge',opts:['正确','错误'],ans:1,
+  exp:{ok:'判断正确！',no:'大错特错。',why:'火灾时电梯易断电困人，电梯井像烟囱会涌入高温烟气，必须走疏散楼梯。'},
+  src:'依据：国家消防救援局《楼房火灾逃生6要点》第6条'},
+ {q:'电气火灾处置，请按正确顺序点击：',
+  type:'order',
+  opts:['拨打119报警','切断电源总闸','用灭火器扑救初起火灾','火势失控立即撤离'],
+  order:[1,0,2,3],
+  exp:{ok:'顺序正确！',no:'顺序有误，再排一次。',why:'先断电防触电，再报警；火势初起且确保安全时用灭火器扑救，无法控制立即撤离。'},
+  src:'依据：《消防法》第四十四条；应急管理部灭火器使用科普'},
+ {q:'被困室内等待救援，请按正确顺序点击：',
+  type:'order',
+  opts:['用手背试门把手温度','用湿毛巾/衣物封堵门缝','拨打119说清地址与被困人数','在窗口挥动衣物呼救'],
+  order:[0,1,2,3],
+  exp:{ok:'顺序正确！',no:'顺序有误，再排一次。',why:'先判断门外火情，再封堵门缝延缓烟火，报警说明位置，最后在窗口标明位置等待救援。'},
+  src:'依据：国家消防救援局《楼房火灾逃生6要点》第1、2、3、4条'},
+];
+
+/* 走廊三出口 */
+const DOORS=[
+ {x:29,y:8,key:'elev',label:'电梯',ok:false,
+  why:'火灾时严禁乘坐电梯：电梯断电会困人，电梯井像烟囱会吸入高温烟气，极其危险。正确做法是走安全疏散楼梯。',
+  src:'依据：《消防法》第二十八条；国家消防救援局逃生6要点第6条'},
+ {x:29,y:9,key:'window',label:'窗台',ok:false,
+  why:'高层跳窗逃生不可取：坠落伤亡风险极高。无法经楼梯撤离时，应关闭房门、封堵门缝，在窗口呼救固守待援。',
+  src:'依据：国家消防救援局逃生6要点第2、4条'},
+ {x:29,y:10,key:'exit',label:'安全出口',ok:true,
+  why:'正确！沿疏散指示标志走安全楼梯，捂住口鼻、按烟气情况低姿，快速有序撤离到室外集合点。',
+  src:'依据：国家消防救援局《楼房火灾逃生6要点》第5、6条'},
+];
+/* 答题节点（踩上去触发对应题目） */
+const NODES=[
+ {x:3,y:8},{x:8,y:9},{x:12,y:8},{x:13,y:10},{x:15,y:9},
+ {x:18,y:8},{x:19,y:11},{x:21,y:9},{x:25,y:8},{x:27,y:10},
+];
+/* 火墙闸门：完成指定题目后熄灭 */
+const GATES=[
+ {need:[0,1],col:10},
+ {need:[2,3,4],col:16},
+ {need:[5,6,7],col:23},
+];
+/* 逃生关道具 */
+const ITEMS=[
+ {x:4,y:11,k:'towel',name:'湿毛巾'},
+ {x:17,y:11,k:'ext',name:'灭火器'},
+ {x:20,y:10,k:'mask',name:'防烟面罩'},
+];
+const ITEM_ICON={towel:'🧻',ext:'🧯',mask:'😷'};
+/* 可被灭火器扑灭的小火苗（捷径障碍） */
+const SMALLFIRES=[{x:12,y:11},{x:19,y:9},{x:19,y:10},{x:25,y:11}];
+/* 随机坠落事件候选点 */
+const EV_SPOTS=[{x:4,y:10},{x:7,y:8},{x:9,y:11},{x:13,y:9},{x:17,y:10},{x:22,y:11},{x:26,y:8}];
+/* 伪隐患（安全物品，考察辨别力） */
+const FAKES={
+ dorm:[
+  {x:10,y:3,name:'床头柜 · 台灯',msg:'台灯功率小、远离被褥，正常使用没问题。注意：用合格灯具，睡前断电。'},
+  {x:26,y:2,name:'衣柜',msg:'衣柜本身不是隐患——但周围保持整洁，别堆杂物堵住通道。'},
+ ],
+ lab:[
+  {x:2,y:2,name:'通风橱',msg:'通风橱是安全设施：做实验时开启，把有害气体挡在橱内。'},
+  {x:25,y:2,name:'气瓶',msg:'气瓶本身安全——但要固定牢靠、远离火源、用完关阀。'},
+ ],
+ class:[
+  {x:10,y:16,name:'多媒体讲台',msg:'讲台本身没问题——问题出在下方插排过载和下课不断电。'},
+  {x:27,y:2,name:'空调',msg:'空调正常使用没问题——但教室无人时要断电。'},
+ ],
+};
+
+/* 依据页 */
+const SOURCES=[
+ {t:'《中华人民共和国消防法》（2021修正）第二十七、二十八、四十四条',u:'https://www.beijing.gov.cn/zhengce/zhengcefagui/qtwj/202307/t20230726_3207767.html'},
+ {t:'《高等学校消防安全管理规定》（教育部、公安部令第28号）第十八条：学生宿舍等人员密集场所禁止违规使用大功率电器',u:'http://www.moe.gov.cn/srcsite/A03/s3013/201004/t20100427_91963.html'},
+ {t:'国家消防救援局：2025年全国火灾84.1万起，电气故障引发25.9万起占30.8%（2026-03-17发布会）',u:'http://www.jingjiribao.cn/static/detail.jsp?id=643941'},
+ {t:'国家消防救援局《楼房火灾逃生6要点》（新华社 2026-03-20）',u:'https://www.workercn.cn/c/2026-03-20/8761623.shtml'},
+ {t:'应急管理部《如何安全使用插座？》：插座不能超负荷使用',u:'https://www.mem.gov.cn/kp/shaq/202010/t20201023_370853.shtml'},
+ {t:'应急管理部《未拔充电器，客厅被烧光！》：充电器短路4分钟升至53℃实测（2026-09-22）',u:'https://news.cctv.cn/2026/09/22/ARTIoOSkZ1bKh8e3wrmVhO0e260922.shtml'},
+ {t:'南京消防实验：4台电热水壶同接一个接线板，217.2℃打火、绝缘破损（光明网 2026-03-08）',u:'https://m.gmw.cn/2026-03/08/content_1304368549.htm'},
+ {t:'中国消防2025年口径：湿毛巾作用有限、防烟面罩更佳（安丘市教体局转载 2025-11-09）',u:'http://www.anqiu.gov.cn/xxgk/sjyj/202511/t20251110_647509.html'},
+ {t:'应急管理部：身上着火就地打滚、不宜带火奔跑',u:'http://tj.119.gov.cn/index/gabsycs/hzyfgh/202101/t20210111_5315250.html'},
+ {t:'中国消防：插线板使用注意事项（天津消防转载 2022-12-02）',u:'http://tj.119.gov.cn/index/gabsycs/hzyfgh/202212/t20221202_6048366.html'},
+ {t:'宁波大学宿舍火灾通报：系电热毯导致（央广网 2025-11-25）',u:'https://news.cnr.cn/native/gd/20251125/t20251125_527441232.shtml'},
+ {t:'《高等学校实验室安全规范》（教科信厅函〔2023〕5号）：实验室配备消防设施、隐患排查闭环管理（西安文理学院转发全文）',u:'https://gz.xawl.edu.cn/info/1226/4091.htm'},
+ {t:'《高等学校实验室工作规程》（国家教委令第20号）第二十五条：定期检查防火、防爆、防事故安全措施',u:'https://www.gov.cn/zhengce/1992-06/27/content_5713357.htm'},
+ {t:'中国互联网联合辟谣平台：湿毛巾只对初期火灾有用，不可凭它穿越浓烟（2025-11-28）',u:'https://www.piyao.org.cn/20251128/28e5fd10229b45c2b2fc6b666e63924e/c.html'},
+ {t:'广东消防：身上着火就地打滚压灭火焰、打滚速度不要过快（2026-07-22）',u:'https://gd.119.gov.cn/xfkp/zjts/content/post_4932483.html'},
+ {t:'GB 2099.7-2024《家用和类似用途延长线插座 安全技术规范》（2025-08-01实施）',u:'https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=D4F79BC19C597DBE4AE413C0F3EC7BAC'},
+];
+
+/* ================= 角色像素图（16×16） ================= */
+const SPRITES={
+ male:[
+  '......HHHH......',
+  '....HHHHHHHH....',
+  '....HHHHHHHH....',
+  '...HHHHHHHHHH...',
+  '...SSSSSSSSSS...',
+  '...SWWSSSSWWS...',
+  '...SWBSSSSBWS...',
+  '...SSSMMMMSSS...',
+  '....SSSSSSSS....',
+  '.....SSSSSS.....',
+  '...TTTTTTTTTT...',
+  '..TTTTTTTTTTTT..',
+  '..SSTTTTTTTTSS..',
+  '..SS.TTTTTT.SS..',
+  '...TTTTTTTTTT...',
+  '...TTT....TTT...',
+  '...PPP....PPP...',
+  '...PPP....PPP...',
+  '...FFF....FFF...',
+  '................',
+ ],
+ female:[
+  '....hhhhhhhh....',
+  '...hhhhhhhhhh...',
+  '..hh..hhhh..hh..',
+  '..hhhHHHHHHhhh..',
+  '..hSSSSSSSSSSh..',
+  '..hSWWSSSSWWSh..',
+  '..hSWBSSSSBWSh..',
+  '..hSSSMMMMSSSh..',
+  '..hhSSSSSSSShh..',
+  '..hh.SSSSS.hh...',
+  '..hTTTTTTTTTTh..',
+  '..TTTTTTTTTTTT..',
+  '..SSTTTTTTTTSS..',
+  '..SS.TTTTTT.SS..',
+  '...TTTTTTTTTT...',
+  '...KKKKKKKKKK...',
+  '...SS......SS...',
+  '...SS......SS...',
+  '...FF......FF...',
+  '................',
+ ],
+};
+const PAL={ H:'#2f2f38', S:'#ffd9b3', W:'#ffffff', B:'#1b1b28', M:'#c96a5a', T:'#3f7fbf', P:'#3a3f66', F:'#26262e' };
+const PAL_F={ h:'#7a5230', H:'#7a5230', S:'#ffd9b3', W:'#ffffff', B:'#1b1b28', M:'#c96a5a', T:'#e07090', K:'#8a5fa8', F:'#26262e' };
+
+/* ================= 游戏状态 ================= */
+let state={
+ scene:'dorm',           // dorm | lab | class | corridor
+ mode:'easy',            // easy | hard
+ gender:'male',
+ px:14, py:16, dir:0,    // dir 0下1左2右3上
+ found:[],               // 全局已发现隐患 id
+ sceneFound:0,           // 当前场景已发现数
+ score:0,
+ timeLeft:480,
+ over:false,
+ quizIdx:0, quizFirst:true, quizCorrect:0,
+ routeDone:false, routeScore:0,
+ fx:null,                // 答题过场动画
+ qDone:[],               // 走廊答题节点完成情况
+ corT:90,                // 火场逃生倒计时
+ items:[],               // 逃生道具
+ misPress:0,             // 误判次数（按E无目标）
+ fade:{a:0,dir:0,cb:null},
+ moved:false,
+};
+let keys={}, map=DORM.slice(), curHazards=HAZARDS;
+let animT=0, toastTimer=null, hintTimer=null, timerInt=null, corTimer=null, smokeSlow=0;
+let fxP=[];              // 过场粒子
+let fxToken=0;           // fx 代际令牌（演示模式防竞态）
+let evCur=null, evTick=null, crkTimer=null;
+let best=0; try{ best=parseInt(localStorage.getItem('dyh_best')||'0',10); }catch(e){ best=0; }
+
+/* ================= 工具与音频 ================= */
+const $=id=>document.getElementById(id);
+function showOv(id,b){ $(id).classList.toggle('show',b); }
+function overlayOpen(){ return state.fx!==null || ['title','dialog','quiz','fire','result','sources','gallery','about','pause','case'].some(id=>$(id).classList.contains('show')); }
+function toast(txt,ms){ const t=$('toast'); t.textContent=txt; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',ms||1800); }
+let AC=null, muted=false;
+function beep(f,dur,type,vol){ if(muted)return; try{ if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)(); const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain(); o.type=type||'square'; o.frequency.value=f; g.gain.setValueAtTime(vol||0.05,t); g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.08)); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t+(dur||0.08)); }catch(e){} }
+const sFound=()=>{beep(660,.09);setTimeout(()=>beep(880,.12),90);};
+const sWrong=()=>beep(190,.22,'sawtooth');
+const sRight=()=>{beep(523,.09);setTimeout(()=>beep(784,.12),90);};
+const sFire=()=>{beep(90,.6,'sawtooth',.07);setTimeout(()=>beep(70,.6,'sawtooth',.07),300);};
+$('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊';};
+
+/* ================= 标题页 ================= */
+function drawAvatar(can,gender){
+  const c=can.getContext('2d'); c.imageSmoothingEnabled=false;
+  c.fillStyle='#141a2e'; c.fillRect(0,0,56,56);
+  const rows=SPRITES[gender], pal=gender==='male'?PAL:PAL_F, s=56/rows.length;
+  for(let y=0;y<16;y++){ const row=rows[y]; for(let x=0;x<16;x++){ const ch=row[x]; if(ch!=='.'){ c.fillStyle=pal[ch]||'#fff'; c.fillRect(x*s,y*s,s,s); } } }
+}
+drawAvatar($('av-m'),'male'); drawAvatar($('av-f'),'female');
+function selToggle(btn,group){ group.forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+$('mode-easy').classList.add('sel'); $('av-m').classList.add('sel');
+$('mode-easy').onclick=()=>selToggle($('mode-easy'),[$('mode-easy'),$('mode-hard')]);
+$('mode-hard').onclick=()=>selToggle($('mode-hard'),[$('mode-easy'),$('mode-hard')]);
+$('av-m').onclick=()=>{state.gender='male';selToggle($('av-m'),[$('av-m'),$('av-f')]);};
+$('av-f').onclick=()=>{state.gender='female';selToggle($('av-f'),[$('av-m'),$('av-f')]);};
+
+/* ================= 流程 ================= */
+function resetGame(){
+  clearInterval(timerInt); clearInterval(corTimer); clearInterval(evTick); clearInterval(crkTimer);
+  state.score=0; state.found=[]; state.sceneFound=0; state.quizIdx=0; state.quizCorrect=0; state.routeScore=0; state.routeDone=false;
+  state.timeLeft=480; state.over=false; state.px=14; state.py=16; state.dir=0; state.moving=false;
+  state.qDone=Array(QUIZ.length).fill(false); state.corT=90; smokeSlow=0;
+  state.items=[]; state.misPress=0; state.fakeSeen=[]; state.fade={a:0,dir:0,cb:null};
+  evCur=null; bgmStop();
+  DOORS.forEach(d=>d.failed=false); GATES.forEach(g=>g.open=false);
+  $('hint').style.display='none';
+}
+function enterScene(key){
+  const sc=SCENES[key];
+  state.scene=key; map=sc.map.slice(); curHazards=sc.hazards; state.sceneFound=0;
+  state.px=sc.start[0]; state.py=sc.start[1];
+  if(state.mode==='hard') startTimer();
+  bgmStart('calm');
+  setTimeout(showHint,1200);
+}
+function showHint(){
+  if(state.mode!=='easy'||!SCENES[state.scene]){ $('hint').style.display='none'; return; }
+  const h=curHazards.find(hz=>!state.found.includes(hz.id));
+  if(h){ $('hint').textContent='💡 '+h.hint; $('hint').style.display='block'; }
+  else $('hint').style.display='none';
+}
+$('btn-start').onclick=()=>{
+  state.mode=$('mode-hard').classList.contains('sel')?'hard':'easy';
+  resetGame(); showOv('title',false);
+  $('dlg-name').textContent='👩‍🦳 宿管阿姨';
+  $('dlg-body').innerHTML='<div>同学，今晚安全大排查！宿舍、实验室、教室都要查——重点看插座和床铺。查完三个场景，火情不会等人。</div>';
+  showOv('dialog',true);
+  $('dlg-ok').onclick=()=>{ showOv('dialog',false); enterScene('dorm'); beep(440,.07); };
+};
+$('btn-again').onclick=()=>{ resetGame(); showOv('result',false); showOv('title',true); state.scene='dorm'; map=DORM.slice(); };
+
+/* 计时（困难模式） */
+function startTimer(){
+  clearInterval(timerInt);
+  timerInt=setInterval(()=>{
+    if(overlayOpen()) return;
+    state.timeLeft--;
+    if(state.timeLeft<=0){
+      clearInterval(timerInt); state.timeLeft=0;
+      if(state.scene==='dorm') fireTrigger('⏰ 排查时间到！宿舍的 '+(curHazards.length-state.sceneFound)+' 处隐患还没排除——隐患不会等你，火情已经发生！');
+      else if(SCENES[state.scene]) fireTrigger('⏰ 排查时间到！本场景还有 '+(curHazards.length-state.sceneFound)+' 处隐患未排除——隐患不会等你，火情已经发生！');
+    }
+  },1000);
+}
+
+/* ================= 交互 ================= */
+const SOLID='#BDNTKCFERAVZOMJQG&~';
+function isDoorTile(x,y){ return state.scene==='corridor' && x===29 && y>=8 && y<=10; }
+function interact(){
+  if(overlayOpen()) return;
+  if(SCENES[state.scene]){
+    const h=curHazards.find(hz=>!state.found.includes(hz.id) && Math.abs(hz.x-state.px)+Math.abs(hz.y-state.py)<=1);
+    if(h){ openHazard(h); return; }
+    const fk=(FAKES[state.scene]||[]).find(f=>Math.abs(f.x-state.px)+Math.abs(f.y-state.py)<=1);
+    if(fk){ openFake(fk); return; }
+    state.misPress++; toast('这里一切正常。'); beep(330,.05);
+  } else if(state.scene==='corridor'){
+    const d=DOORS.find(dd=>Math.abs(dd.x-state.px)+Math.abs(dd.y-state.py)<=1);
+    if(d) doorChoice(d); else toast('走到出口旁按 E；答题点直接走上去即可');
+  }
+}
+function openFake(fk){
+  beep(392,.06);
+  $('dlg-name').textContent='🔎 '+fk.name;
+  $('dlg-body').innerHTML='<div class="sec">✅ 安全知识点</div><div>'+fk.msg+'</div><div class="sec">💡 小提示</div><div>调查安全物品不会扣分——但要记住：排查是为了找隐患，不是草木皆兵。</div>';
+  showOv('dialog',true);
+  $('dlg-ok').onclick=()=>{ showOv('dialog',false); };
+}
+function openHazard(h){
+  beep(392,.06);
+  $('dlg-name').textContent=h.icon+' '+h.name;
+  const actHtml=h.act
+    ? '<div class="sec">🧩 正确处置（选一个）</div><div class="q" style="margin:6px 0 2px">'+h.act.q+'</div><div id="dlg-act-opts"></div><div id="dlg-act-fb" style="font-size:12px;margin-top:6px"></div>'
+    : '';
+  const rightHtml=h.act
+    ? '<div id="dlg-right" style="display:none"><div class="sec">✅ 正确做法</div><div>'+h.right+'</div></div>'
+    : '<div class="sec">✅ 正确做法</div><div>'+h.right+'</div>';
+  $('dlg-body').innerHTML=
+    '<div class="sec">⚠ 为什么危险</div><div>'+h.why+'</div>'+
+    actHtml+rightHtml+
+    '<div class="data-line">📊 数据一角：'+(HZ_DATA[h.id]||'')+'</div>'+
+    '<div class="src">'+h.src+'</div>'+
+    (h.id===3?'<div style="margin-top:8px"><button class="btn" id="btn-case0">🎬 案例还原（真实事件）</button></div>':'');
+  const okBtn=$('dlg-ok');
+  okBtn.style.display=h.act?'none':'block';
+  if(h.act){
+    const box=$('dlg-act-opts'); box.innerHTML='';
+    h.act.opts.forEach((o,i)=>{
+      const b=document.createElement('button');
+      b.className='opt'; b.textContent=String.fromCharCode(65+i)+'　'+o;
+      b.onclick=()=>{
+        if(b.dataset.done)return;
+        if(i===h.act.ans){
+          b.classList.add('correct'); b.dataset.done='1';
+          $('dlg-act-fb').innerHTML='<span style="color:#3ddc84">✓ 正确！隐患已排除</span>';
+          const rt=$('dlg-right'); if(rt){ rt.style.display='block'; }
+          okBtn.style.display='block'; sRight();
+        } else {
+          b.classList.add('wrong'); b.onclick=null;
+          $('dlg-act-fb').innerHTML='<span style="color:#ff8c8c">✗ 再想想…</span>';
+          if(state.mode==='hard'&&state.timeLeft>0){ state.timeLeft=Math.max(0,state.timeLeft-5); toast('⚠ 错误处置，倒计时 -5 秒'); }
+          sWrong();
+        }
+      };
+      box.appendChild(b);
+    });
+  }
+  showOv('dialog',true);
+  const bc0=$('btn-case0'); if(bc0) bc0.onclick=openCase;
+  $('dlg-ok').onclick=()=>{
+    showOv('dialog',false);
+    state.found.push(h.id); state.sceneFound++; state.score+=100; sFound();
+    if(state.sceneFound>=curHazards.length){
+      const sc=SCENES[state.scene];
+      if(sc.next){ toast('本场景排查完成！'); setTimeout(()=>fadeOut(()=>{ enterScene(sc.next); fadeIn(); }),500); }
+      else setTimeout(()=>fadeOut(()=>{ fireTrigger(null); fadeIn(); }),500);
+    }
+    else showHint();
+  };
+}
+function fireTrigger(msg){
+  clearInterval(timerInt);
+  $('hint').style.display='none';
+  $('fire-msg').textContent=msg||('三个场景 '+state.found.length+' 处隐患已全部排除！但就在此刻，过载的插线板蹿出了火苗——火情还是来了。接下来，你只有几分钟做出正确选择。');
+  showOv('fire',true); sFire();
+}
+$('btn-fire-next').onclick=()=>{ showOv('fire',false); fadeOut(()=>{ enterCorridor(); fadeIn(); }); };
+/* 转场淡入淡出 */
+function fadeOut(cb){ state.fade={a:0,dir:1,cb:cb}; }
+function fadeIn(){ state.fade.dir=-1; state.fade.cb=null; }
+
+/* ================= 逃生问答 ================= */
+function openQuizFor(i){ state.quizIdx=i; ordAttempted=false; renderQuiz(); showOv('quiz',true); }
+let ordPool=[], ordSeq=[], ordDone=false, ordAttempted=false;
+function renderQuiz(){
+  const q=QUIZ[state.quizIdx];
+  $('quiz-head').textContent='🚒 火场逃生决策 '+String(state.quizIdx+1)+' / '+QUIZ.length;
+  $('quiz-q').textContent=q.q;
+  const box=$('quiz-opts'); box.innerHTML='';
+  $('quiz-exp').classList.remove('show'); $('quiz-exp').innerHTML='';
+  $('quiz-next').style.display='none';
+  if(q.type==='order'){
+    ordPool=q.opts.map((_,i)=>i).sort(()=>Math.random()-0.5);
+    ordSeq=[]; ordDone=false;
+    box.innerHTML='<div id="ord-pool" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>'+
+      '<div style="color:#8fd3ff;font-size:12px">已排顺序：</div><div id="ord-seq" style="display:flex;flex-wrap:wrap;gap:6px;min-height:38px;margin-top:4px"></div>'+
+      '<button class="btn" id="ord-ok" style="margin-top:10px">确认顺序</button>';
+    const renderOrd=()=>{
+      const poolEl=$('ord-pool'); poolEl.innerHTML='';
+      ordPool.forEach(i=>{
+        const b=document.createElement('button');
+        b.className='opt'; b.style.width='auto'; b.textContent=q.opts[i];
+        b.onclick=()=>{ ordSeq.push(i); ordPool.splice(ordPool.indexOf(i),1); renderOrd(); };
+        poolEl.appendChild(b);
+      });
+      const seqEl=$('ord-seq'); seqEl.innerHTML='';
+      ordSeq.forEach((i,k)=>{
+        const b=document.createElement('button');
+        b.className='opt correct'; b.style.width='auto';
+        b.textContent=(k+1)+'. '+q.opts[i];
+        b.onclick=()=>{ ordPool.push(i); ordSeq.splice(k,1); renderOrd(); };
+        seqEl.appendChild(b);
+      });
+      $('ord-ok').onclick=answerOrder;
+    };
+    renderOrd();
+  } else {
+    q.opts.forEach((o,i)=>{
+      const b=document.createElement('button');
+      b.className='opt'; b.textContent=String.fromCharCode(65+i)+'　'+o;
+      b.onclick=()=>answerQuiz(i);
+      box.appendChild(b);
+    });
+  }
+}
+function answerOrder(){
+  if(ordDone) return;
+  const q=QUIZ[state.quizIdx];
+  if(ordSeq.length!==q.opts.length){ toast('先把所有步骤排完！'); return; }
+  const ok=ordSeq.join(',')===q.order.join(',');
+  if(ok){
+    ordDone=true;
+    const first=!ordAttempted;
+    state.qDone[state.quizIdx]=true;
+    if(first){ state.score+=50; state.quizCorrect++; sRight(); }
+    else beep(660,.08);
+    const ex=$('quiz-exp'); ex.classList.add('show');
+    ex.innerHTML='<div class="ok">✓ '+q.exp.ok+(first?'　<b>+50分</b>':'　<small>（本题已无分数，记住它）</small>')+'</div><div>'+q.exp.why+'</div><div class="src">'+q.src+'</div>';
+    $('quiz-next').style.display='block';
+    showOv('quiz',false); startFx('ok',()=>showOv('quiz',true));
+  } else {
+    const first=!ordAttempted; ordAttempted=true;
+    const ex=$('quiz-exp'); ex.classList.add('show');
+    ex.innerHTML='<div class="no">✗ '+(first?'<b>首次排序错误：本环节不得分</b>，可重新排列':'再排一次…')+'</div><div>'+q.exp.no+'</div><div class="src">'+q.src+'</div>';
+    if(first) sWrong(); else beep(300,.06);
+    showOv('quiz',false); startFx('bad',()=>{ showOv('quiz',true); renderQuiz(); });
+  }
+}
+function answerQuiz(i){
+  const q=QUIZ[state.quizIdx];
+  const opts=Array.from(document.querySelectorAll('#quiz-opts .opt'));
+  if(opts[0].dataset.done) return;
+  const first=!opts[0].dataset.attempted;
+  if(i===q.ans){
+    opts.forEach((o,idx)=>{ o.onclick=null; if(idx===i)o.classList.add('correct'); });
+    opts[0].dataset.done='1';
+    state.qDone[state.quizIdx]=true;
+    if(first){ state.score+=50; state.quizCorrect++; sRight(); }
+    else beep(660,.08);
+    const ex=$('quiz-exp'); ex.classList.add('show');
+    ex.innerHTML='<div class="ok">✓ '+q.exp.ok+(first?'　<b>+50分</b>':'　<small>（本题已无分数，记住它）</small>')+'</div><div>'+q.exp.why+'</div><div class="src">'+q.src+'</div>';
+    $('quiz-next').style.display='block';
+    showOv('quiz',false); startFx('ok',()=>showOv('quiz',true));
+  } else {
+    opts[0].dataset.attempted='1';
+    opts[i].classList.add('wrong'); opts[i].onclick=null;
+    const ex=$('quiz-exp'); ex.classList.add('show');
+    ex.innerHTML='<div class="no">✗ '+(first?'<b>首次选择错误：本环节不得分</b>，可重新选择':'再想想…')+'</div><div>'+q.exp.no+'</div><div class="src">'+q.src+'</div>';
+    if(first) sWrong(); else beep(300,.06);
+    showOv('quiz',false); startFx('bad',()=>showOv('quiz',true));
+  }
+}
+$('quiz-next').onclick=()=>{
+  showOv('quiz',false);
+  const n=NODES[state.quizIdx];
+  if(n && map[n.y] && map[n.y][n.x]==='?'){
+    map[n.y]=map[n.y].slice(0,n.x)+'.'+map[n.y].slice(n.x+1);
+    checkGates();
+    toast('✅ 决策完成，继续前进！');
+  }
+};
+function checkGates(){
+  GATES.forEach(g=>{
+    if(g.open) return;
+    if(g.need.every(i=>state.qDone[i])){
+      g.open=true;
+      for(let y=8;y<=11;y++){ map[y]=map[y].slice(0,g.col)+'.'+map[y].slice(g.col+1); }
+      sRight(); toast('🔥 火墙熄灭了，快走！');
+    }
+  });
+}
+function enterCorridor(){
+  clearInterval(timerInt); clearInterval(corTimer); clearInterval(evTick); clearInterval(crkTimer);
+  state.scene='corridor'; map=CORR.slice(); state.px=0; state.py=9;
+  state.corT=90; smokeSlow=0; evCur=null;
+  $('hint').style.display='none';
+  corTimer=setInterval(()=>{
+    if(overlayOpen()) return;
+    state.corT--;
+    if(state.corT<=0){ state.corT=90; state.px=0; state.py=9; toast('⏱ 浓烟逼近！重新挑战逃生路线'); }
+  },1000);
+  /* 随机坠落事件：警告→坠落→清除 */
+  evTick=setInterval(()=>{
+    if(overlayOpen()) return;
+    if(!evCur){
+      const cand=EV_SPOTS.filter(s=>map[s.y][s.x]==='.' && !(s.x===state.px&&s.y===state.py));
+      if(cand.length&&Math.random()<0.7){ evCur={x:cand[0].x,y:cand[0].y,phase:'warn',t:0}; map[evCur.y]=map[evCur.y].slice(0,evCur.x)+'!'+map[evCur.y].slice(evCur.x+1); }
+    } else {
+      evCur.t+=0.3;
+      if(evCur.phase==='warn'&&evCur.t>=1.4){ map[evCur.y]=map[evCur.y].slice(0,evCur.x)+'&'+map[evCur.y].slice(evCur.x+1); evCur.phase='block'; evCur.t=0; beep(120,.15,'sawtooth',.05); }
+      else if(evCur.phase==='block'&&evCur.t>=6){ map[evCur.y]=map[evCur.y].slice(0,evCur.x)+'.'+map[evCur.y].slice(evCur.x+1); evCur=null; }
+    }
+  },300);
+  /* 火场噼啪环境音 */
+  crkTimer=setInterval(()=>{ if(!muted&&!overlayOpen()) beep(50+Math.random()*90,.05,'sawtooth',.015); },700);
+  bgmStart('fire');
+  toast('🔥 穿越火场：完成逃生决策、避开火墙，找到安全出口！');
+}
+function doorChoice(d){
+  beep(330,.06);
+  $('dlg-name').textContent=(d.ok?'✅ 安全出口':'⚠ '+d.label);
+  $('dlg-body').innerHTML='<div class="sec">'+(d.ok?'逃生判定：正确！':'错误路线')+'</div><div>'+d.why+'</div><div class="src">'+d.src+'</div>';
+  showOv('dialog',true);
+  $('dlg-ok').onclick=()=>{
+    showOv('dialog',false);
+    if(d.ok){ state.routeScore=100; state.routeDone=true; state.score+=100; sRight(); showResult(); }
+    else { d.failed=true; state.px=28; keys.up=keys.down=keys.left=keys.right=false; sWrong(); toast('这条路不通！重新找正确的出口'); }
+  };
+}
+
+/* ================= 结算 ================= */
+function showResult(){
+  clearInterval(timerInt); clearInterval(corTimer); clearInterval(evTick); clearInterval(crkTimer);
+  state.over=true;
+  const baseMax=TOTAL_H*100+QUIZ.length*50+100;
+  let bonus=0; const badges=[];
+  const zeroMiss=state.misPress===0;
+  const galGot=state.found.length+state.qDone.filter(Boolean).length;
+  const allGal=galGot>=(TOTAL_H+QUIZ.length);
+  const fast=state.corT>=40;
+  if(zeroMiss){ bonus+=100; badges.push('<span class="badge won">🎯 火眼金睛 · 零误判 +100</span>'); }
+  else badges.push('<span class="badge miss">🎯 火眼金睛：误判 '+state.misPress+' 次（未达成）</span>');
+  if(allGal){ bonus+=100; badges.push('<span class="badge won">📚 知识达人 · 图鉴全收集 +100</span>'); }
+  else badges.push('<span class="badge miss">📚 知识达人：图鉴 '+galGot+'/'+(TOTAL_H+QUIZ.length)+'（未达成）</span>');
+  if(fast){ bonus+=100; badges.push('<span class="badge won">⚡ 极速逃生 · 余时≥40s +100</span>'); }
+  else badges.push('<span class="badge miss">⚡ 极速逃生：余时≥40s（未达成）</span>');
+  state.score+=bonus;
+  const max=baseMax+300;
+  const pct=state.score/max;
+  let isNew=false;
+  if(state.score>best){ best=state.score; try{ localStorage.setItem('dyh_best',String(best)); }catch(e){} isNew=true; }
+  $('best-line').textContent='🏅 最佳纪录：'+best+' 分';
+  $('res-title').textContent= pct>=0.85?'🏆 安全卫士':(pct>=0.6?'🎖 应急达人':'📖 消防新兵');
+  $('res-score').innerHTML='得分 <b style="color:#ffd166;font-size:22px">'+state.score+'</b> / '+max+(isNew?'　<b style="color:#3ddc84">新纪录！</b>':'')+
+    '<br><span style="font-size:11px;color:#9fb4d8">隐患排查 '+state.found.length*100+' 分 · 逃生决策 '+state.quizCorrect*50+' 分 · 路线选择 '+state.routeScore+' 分 · 成就加成 +'+bonus+' 分</span>';
+  $('res-badges').innerHTML=badges.join('');
+  $('res-recap').innerHTML='<b style="color:#8fd3ff">通关知识回顾</b><ul>'+
+    '<li>电气故障是火灾第一诱因：2025年占全国火灾总数 30.8%</li>'+
+    '<li>插线板不串联、不超负荷，大功率电器“专插专用”</li>'+
+    '<li>学生宿舍禁止违规使用大功率电器（教育部、公安部令第28号）</li>'+
+    '<li>起火先断电再报警，带电火灾严禁泼水</li>'+
+    '<li>湿毛巾作用有限、防烟面罩更佳；浓烟不穿越、固守待援</li>'+
+    '<li>不乘电梯、按烟气情况低姿，沿安全通道撤离</li></ul>';
+  const rcv=$('route-cv'); if(rcv) rcv.dataset.t0=animT;
+  bgmStart('win'); setTimeout(bgmStop,3600);
+  showOv('result',true); sRight();
+}
+/* ================= 知识图鉴 ================= */
+function renderGallery(){
+  const total=TOTAL_H+QUIZ.length;
+  const got=state.found.length+state.qDone.filter(Boolean).length;
+  let html='<div style="color:#8fd3ff;margin:6px 0">🚨 隐患图鉴（'+state.found.length+'/'+TOTAL_H+'）</div><div class="grid">';
+  [...HAZARDS,...LABH,...CLSH].forEach(h=>{
+    const un=state.found.includes(h.id);
+    html+='<div class="gcard'+(un?'':' lock')+'"><div class="gi">'+h.icon+'</div><div class="gn">'+(un?h.name:'？？？')+'</div><div class="gd">'+(un?(HZ_DATA[h.id]||h.right):'排查发现后解锁')+'</div></div>';
+  });
+  html+='</div><div style="color:#8fd3ff;margin:8px 0">🚒 逃生要点（'+state.qDone.filter(Boolean).length+'/'+QUIZ.length+'）</div><div class="grid">';
+  QUIZ.forEach((q,i)=>{
+    const un=state.qDone[i];
+    html+='<div class="gcard'+(un?'':' lock')+'"><div class="gi">'+(q.type==='order'?'🔀':(q.type==='judge'?'⚖️':'🚒'))+'</div><div class="gn">'+(un?'要点 '+(i+1):'？？？')+'</div><div class="gd">'+(un?(q.type==='order'?q.order.map(k=>q.opts[k]).join(' → '):q.opts[q.ans]):'答对逃生决策后解锁')+'</div></div>';
+  });
+  html+='</div>';
+  $('gal-list').innerHTML=html;
+  $('gal-count').textContent=got+' / '+total+' 已解锁';
+}
+$('btn-gal0').onclick=()=>{ renderGallery(); showOv('gallery',true); };
+$('btn-gal2').onclick=()=>{ renderGallery(); showOv('gallery',true); };
+$('btn-gal-close').onclick=()=>showOv('gallery',false);
+$('best-line').textContent= best>0 ? '🏅 最佳纪录：'+best+' 分' : '';
+
+/* ================= 依据页 ================= */
+$('src-list').innerHTML=SOURCES.map(s=>'<div class="src-item"><b>'+s.t+'</b><br><span class="u">'+s.u+'</span></div>').join('');
+$('btn-src2').onclick=()=>showOv('sources',true);
+$('btn-src0').onclick=()=>showOv('sources',true);
+$('btn-src-close').onclick=()=>showOv('sources',false);
+
+/* ================= BGM（8-bit 合成） ================= */
+const BGM={
+ calm:[392,0,330,392,440,0,392,330,294,0,330,392,0,330,294,262,294,0,330,294,262,0,294,330,392,0,330,294,0,262,294,0],
+ fire:[220,0,220,233,0,220,196,0,175,0,196,220,233,0,220,196,175,0,175,196,0,175,165,0,147,0,165,175,0,165,147,131],
+ win:[523,0,659,0,784,0,1046,0,784,0,1046,0,0,0,1046,0],
+};
+let bgmTrack='calm', bgmStep=0, bgmTimer=null;
+function bgmStart(track){ bgmTrack=track; bgmStep=0; if(!bgmTimer) bgmTimer=setInterval(bgmTick,200); }
+function bgmStop(){ clearInterval(bgmTimer); bgmTimer=null; }
+function bgmTick(){
+  const paused=muted||$('pause').classList.contains('show');
+  const n=BGM[bgmTrack]&&BGM[bgmTrack][bgmStep];
+  if(n&&!paused) beep(n,.16,'square',.022);
+  bgmStep=(bgmStep+1)%(BGM[bgmTrack]?BGM[bgmTrack].length:16);
+}
+
+/* ================= 评委演示模式 ================= */
+let demoRun=false, demoQueue=[], demoIdx=0, demoTimer=null, demoPending=false;
+function bfsPath(sx,sy,tx,ty){
+  if(sx===tx&&sy===ty) return [];
+  const BLOCK='#BDNTKCFERAVZOMJQG&~⌁';
+  const doorSet={'29,8':1,'29,9':1,'29,10':1};
+  const q=[[sx,sy]], prev={}, seen={[sx+','+sy]:true};
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  while(q.length){
+    const c=q.shift();
+    for(const d of dirs){
+      const nx=c[0]+d[0], ny=c[1]+d[1];
+      if(nx<0||nx>=COLS||ny<0||ny>=ROWS) continue;
+      const k=nx+','+ny;
+      if(seen[k]) continue;
+      if(doorSet[k]) continue;
+      if(BLOCK.includes(map[ny][nx])) continue;
+      seen[k]=true; prev[k]=c;
+      if(nx===tx&&ny===ty){
+        const path=[]; let cur=[nx,ny];
+        while(!(cur[0]===sx&&cur[1]===sy)){ path.unshift({x:cur[0],y:cur[1]}); cur=prev[cur[0]+','+cur[1]]; }
+        return path;
+      }
+      q.push([nx,ny]);
+    }
+  }
+  return null;
+}
+function demoWalk(tx,ty,cb){
+  const path=bfsPath(Math.round(state.px),Math.round(state.py),tx,ty);
+  if(!path){ state.px=tx; state.py=ty; if(cb)cb(); return; }
+  demoPending=true;
+  let i=0;
+  const iv=setInterval(()=>{
+    if(!demoRun){ clearInterval(iv); demoPending=false; return; }
+    if(overlayOpen()) return;
+    const s=path[i];
+    state.px=s.x; state.py=s.y; state.moving=true;
+    i++;
+    if(i>=path.length){
+      clearInterval(iv); demoPending=false;
+      if(map[s.y][s.x]==='?'){
+        const ni=NODES.findIndex(n=>n.x===s.x&&n.y===s.y);
+        if(ni>=0&&!state.qDone[ni]) openQuizFor(ni);
+      }
+      if(cb)cb();
+    }
+  },110);
+}
+function buildDemo(){
+  demoQueue=[];
+  const spots={dorm:[[22,9],[9,5],[4,14],[15,13],[7,6],[23,10]],lab:[[6,5],[6,11],[19,11],[9,5],[26,4],[9,9]],class:[[13,16],[3,2],[9,9],[26,2]]};
+  const scenes=[['dorm',HAZARDS],['lab',LABH],['class',CLSH]];
+  scenes.forEach((pair,si)=>{
+    const key=pair[0], list=pair[1];
+    if(si===0) demoQueue.push({sub:'任务开始：先查宿舍！',wait:900,fn:()=>{ enterScene('dorm'); }});
+    else demoQueue.push({sub:'排查完成，进入'+SCENES[key].name,wait:2000,fn:()=>{}});
+    list.forEach((h,i)=>{
+      const sp=spots[key][i];
+      demoQueue.push({sub:'发现隐患：'+h.name,wait:400,fn:()=>{ demoWalk(sp[0],sp[1],()=>{ interact(); }); }});
+      demoQueue.push({sub:h.act?('正确处置：'+h.act.opts[h.act.ans].slice(0,14)+'…'):'阅读知识卡',wait:600,fn:()=>{
+        if(!$('dialog').classList.contains('show')) return false;
+        if(h.act){
+          const b=document.querySelectorAll('#dlg-act-opts .opt')[h.act.ans];
+          if(!b||b.dataset.done) return false;
+          b.click();
+        }
+        return true;
+      }});
+      demoQueue.push({sub:'排除隐患：'+h.name,wait:600,fn:()=>{
+        if(!$('dialog').classList.contains('show')) return false;
+        const ok=$('dlg-ok');
+        if(ok.style.display==='none') return false;
+        ok.click(); return true;
+      }});
+    });
+  });
+  demoQueue.push({sub:'火情突发！过载的插线板起火了',wait:1200,fn:()=>{ if(!$('fire').classList.contains('show')) return false; $('btn-fire-next').click(); return true; }});
+  demoQueue.push({sub:'进入火场：答题开道，火墙熄灭',wait:1700,fn:()=>{}});
+  QUIZ.forEach((q,i)=>{
+    const n=NODES[i];
+    demoQueue.push({sub:'逃生决策 '+(i+1)+'：'+(q.type==='order'?'正确排序':q.q.slice(0,16)+'…'),wait:400,fn:()=>{ demoWalk(n.x,n.y,()=>{}); }});
+    demoQueue.push({sub:'作答中…',wait:500,fn:()=>{
+      if(!$('quiz').classList.contains('show')) return false;
+      if(q.type==='order'){
+        if(ordDone) return false;
+        ordSeq=q.order.slice(); ordDone=false;
+        answerOrder();
+      } else {
+        const bs=document.querySelectorAll('#quiz-opts .opt');
+        if(!bs.length||bs[0].dataset.done) return false;
+        bs[q.ans].click();
+      }
+      return true;
+    }});
+    demoQueue.push({sub:'回答正确！',wait:1000,fn:()=>{
+      $('quiz-next').click();
+      showOv('quiz',false); fxToken++; state.fx=null;
+      return true;
+    }});
+  });
+  demoQueue.push({sub:'选择正确的出口：安全出口',wait:500,fn:()=>{ demoWalk(28,10,()=>{ keys.right=true; }); return true; }});
+  demoQueue.push({sub:'逃生成功！',wait:800,fn:()=>{ keys.right=false; if(!$('dialog').classList.contains('show')) return false; $('dlg-ok').click(); return true; }});
+  demoQueue.push({sub:'演示结束——亲自挑战试试？',wait:800,fn:()=>{ demoFinished(); return true; }});
+}
+function demoTick(){
+  if(!demoRun) return;
+  clearTimeout(demoTimer);
+  if(demoPending){ demoTimer=setTimeout(demoTick,100); return; }
+  if(demoIdx>=demoQueue.length){ demoFinished(); return; }
+  const item=demoQueue[demoIdx];
+  if(item.sub) $('demo-sub').textContent='🎬 '+item.sub;
+  let ready=true;
+  try{ if(item.fn) ready=item.fn()!==false; }catch(e){}
+  if(!ready){ demoTimer=setTimeout(demoTick,150); return; }
+  demoIdx++;
+  demoTimer=setTimeout(demoTick,item.wait||650);
+}
+function startDemo(){
+  resetGame();
+  state.mode='easy';
+  demoRun=true; demoIdx=0; demoPending=false;
+  keys.up=keys.down=keys.left=keys.right=false;
+  showOv('title',false);
+  $('demo-sub').style.display='block';
+  $('btn-demo-exit').style.display='block';
+  buildDemo(); demoTick();
+}
+function demoFinished(){
+  demoRun=false; clearTimeout(demoTimer); demoPending=false;
+  $('demo-sub').style.display='none';
+  $('btn-demo-exit').style.display='none';
+  showOv('title',false);
+}
+function endDemoUI(){
+  demoRun=false; clearTimeout(demoTimer); demoPending=false;
+  $('demo-sub').style.display='none';
+  $('btn-demo-exit').style.display='none';
+  showOv('title',true); resetGame(); bgmStop();
+}
+$('btn-demo').onclick=startDemo;
+$('btn-demo-exit').onclick=endDemoUI;
+
+/* ================= 关于作品 ================= */
+function renderAbout(){
+  $('about-body').innerHTML=
+  '<div class="sec" style="color:#8fd3ff">作品信息</div>'+
+  '<div>《电与火之间——宿舍用电安全·像素逃生》｜AI类·交互作品（像素小游戏）｜2026年山东省大学生应急科普原创作品征集活动 · 主题：青春护航 应急有我</div>'+
+  '<div class="sec" style="color:#8fd3ff">玩法说明</div>'+
+  '<div>移动：方向键 / WASD / 虚拟按键；调查：E / 空格 / A键。三个场景排查 16 处用电隐患 → 火情突发 → 火场逃生（10 道决策题 + 道具抉择 + 路线选择）→ 复盘结算。支持简单/困难双难度、知识图鉴、成就徽章。</div>'+
+  '<div class="sec" style="color:#8fd3ff">创作思路</div>'+
+  '<div>“排查隐患→隐患成灾→火场逃生”叙事闭环，让玩家亲手“酿成”火情再亲手逃生；双难度、道具抉择、随机坠落事件提升可玩性；全部知识点锚定法律法规与官方科普，条条可溯源。</div>'+
+  '<div class="sec" style="color:#8fd3ff">AI 使用说明</div>'+
+  '<div>本作品全部代码、文案、像素美术、音效均由生成式人工智能 DeepSeek 创作，AIGC 内容占比 100%。模型服务名称：求索对话 DeepSeek Chat；备案编号：Beijing-DeepseekChat-202404280016（国家网信办生成式人工智能服务备案）。已按《人工智能生成合成内容标识办法》添加显式标识（常驻“AI生成”角标）与隐式标识（meta 标签声明）。</div>'+
+  '<div class="sec" style="color:#8fd3ff">人工参与</div>'+
+  '<div>选题与需求确认、权威依据人工核验、试玩反馈与细节调整、部署上线操作。</div>';
+}
+$('btn-about0').onclick=()=>{ renderAbout(); showOv('about',true); };
+$('btn-about2').onclick=()=>{ renderAbout(); showOv('about',true); };
+$('btn-pause-about').onclick=()=>{ renderAbout(); showOv('about',true); };
+$('btn-about-close').onclick=()=>showOv('about',false);
+$('btn-about-src').onclick=()=>{ showOv('about',false); showOv('sources',true); };
+
+/* ================= 暂停菜单 ================= */
+function togglePause(){
+  if($('pause').classList.contains('show')){ showOv('pause',false); return; }
+  if(['title','result','about','gallery','sources','case','fire'].some(id=>$(id).classList.contains('show'))) return;
+  if(!['dialog','quiz'].some(id=>$(id).classList.contains('show'))) showOv('pause',true);
+}
+$('btn-pause').onclick=togglePause;
+$('btn-resume').onclick=()=>showOv('pause',false);
+$('btn-restart').onclick=()=>{ showOv('pause',false); resetGame(); bgmStop(); showOv('title',true); };
+$('btn-pause-mute').onclick=()=>{ muted=!muted; $('mute').textContent=muted?'🔇':'🔊'; };
+$('btn-pause-gal').onclick=()=>{ renderGallery(); showOv('gallery',true); };
+
+/* ================= 成绩单分享 ================= */
+$('btn-share').onclick=()=>{
+  const pct=Math.round(state.score/2500*100);
+  const txt='《电与火之间》成绩单\n🏆 '+$('res-title').textContent+'｜'+state.score+'/2500 分（前'+pct+'%）\n'+
+    '隐患排查 '+state.found.length+'/16 · 逃生决策 '+state.quizCorrect+'/10 · 误判 '+state.misPress+' 次\n'+
+    '徽章：'+(state.misPress===0?'🎯火眼金睛 ':'')+((state.found.length+state.qDone.filter(Boolean).length)>=26?'📚知识达人 ':'')+(state.corT>=40?'⚡极速逃生':'')+'\n'+
+    '—— 2026年山东省大学生应急科普原创作品征集活动 · 青春护航 应急有我';
+  const done=()=>toast('✅ 成绩单已复制！');
+  const fb=(t)=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(e){} document.body.removeChild(ta); done(); };
+  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(done,()=>fb(txt)); } else fb(txt);
+};
+
+/* ================= 结算路线动画 ================= */
+function drawRoute(){
+  const cv=$('route-cv'); if(!cv) return;
+  const c=cv.getContext('2d'); c.imageSmoothingEnabled=false;
+  c.clearRect(0,0,460,74);
+  const t=animT-(+cv.dataset.t0||0);
+  const GOOD=['断电·报警','判烟低姿','手背试门温','安全通道','室外集合'];
+  const BAD=['乘电梯 ✗','跳窗 ✗','躲衣柜 ✗'];
+  const stepT=30;
+  GOOD.forEach((g,i)=>{
+    const on=t>=i*stepT;
+    const x=6+i*88;
+    c.fillStyle=on?'#0e2e1c':'#101a38'; c.strokeStyle=on?'#3ddc84':'#33406a'; c.strokeRect(x,6,80,26);
+    c.fillStyle=on?'#3ddc84':'#5a6478'; c.font='11px sans-serif'; c.textAlign='center';
+    c.fillText((on?'✓ ':'')+g,x+40,23);
+  });
+  if(t<GOOD.length*stepT){
+    const px=10+(t/stepT)*88, py=40;
+    c.fillStyle='#ffd166'; c.fillRect(px,py,5,5);
+  } else {
+    const bt=t-GOOD.length*stepT;
+    BAD.forEach((b,i)=>{
+      const on=bt>=i*20;
+      const x=6+i*150;
+      c.fillStyle=on?'#3a1414':'#101a38'; c.strokeStyle=on?'#ff5f5f':'#33406a'; c.strokeRect(x,44,140,24);
+      c.fillStyle=on?'#ff8c8c':'#5a6478'; c.font='11px sans-serif'; c.textAlign='center';
+      c.fillText(b,x+70,59);
+    });
+  }
+}
+
+/* ================= 像素案例还原 ================= */
+let caseStart=0;
+const CASE_CAPS=[
+ '某高校宿舍：学生违规使用电热毯',
+ '深夜，电热毯故障，被褥起火',
+ '浓烟蔓延、警报响起——疏散及时才没酿成大祸',
+ '警示：违禁电器=身边的火灾隐患（宁波大学通报 2025-11）',
+];
+function openCase(){ caseStart=animT; showOv('case',true); }
+function drawCase(){
+  const cv=$('case-cv'); const c=cv.getContext('2d'); c.imageSmoothingEnabled=false;
+  const t=(animT-caseStart)/60;
+  const ph=Math.floor(t/4.2)%4;
+  c.fillStyle='#101426'; c.fillRect(0,0,480,240);
+  c.fillStyle='#2a3350'; c.fillRect(40,30,400,180);
+  c.fillStyle='#232b44'; c.fillRect(40,180,400,30);
+  c.fillStyle='#3f7fbf'; c.fillRect(60,50,90,60);
+  c.fillStyle='#8a5a33'; c.fillRect(200,140,160,20);
+  c.fillStyle='#f2efe6'; c.fillRect(204,128,60,12);
+  c.fillStyle='#4a90d9'; c.fillRect(268,120,88,20);
+  c.fillStyle='#ffd9b3'; c.fillRect(230,112,14,14);
+  c.fillStyle='#2f2f38'; c.fillRect(230,110,14,5);
+  const hx=300, hy=138;
+  c.fillStyle='#e63946'; c.fillRect(hx,hy,26,8);
+  if(ph===0){
+    c.fillStyle='rgba(255,82,82,'+(0.25+0.15*Math.sin(animT/10)).toFixed(2)+')';
+    c.fillRect(hx-6,hy-10,38,24);
+  } else if(ph===1){
+    for(let i=0;i<6;i++){ const sx=hx+(i*13)%26, sy=hy-4-((animT*2+i*7)%12); c.fillStyle=i%2?'#ffe066':'#ff8c42'; c.fillRect(sx,sy,3,3); }
+    c.fillStyle='#ff8c42'; c.fillRect(268,122,30,8);
+  } else if(ph===2){
+    for(let i=0;i<5;i++){ const fx=268+(i*15)%50, fh=18+((animT+i*11)%22); c.fillStyle=i%2?'#ff8c42':'#e63946'; c.fillRect(fx,138-fh,10,fh); c.fillStyle='#ffe066'; c.fillRect(fx+3,138-fh,4,5); }
+    for(let i=0;i<8;i++){ const sy=150-(animT*2+i*23)%110; c.fillStyle='rgba(150,155,170,.5)'; c.fillRect(90+i*40,sy,26,16); }
+    c.fillStyle='#ff5252'; c.fillRect(420,40,16,16);
+  } else {
+    c.fillStyle='#1c1c22'; c.fillRect(268,120,88,20);
+    c.fillStyle='#33302a'; c.fillRect(200,140,160,20);
+  }
+  $('case-cap').textContent=CASE_CAPS[ph];
+}
+$('btn-case-close').onclick=()=>showOv('case',false);
+
+/* ================= ESC 与全局按键 ================= */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(demoRun){ endDemoUI(); return; }
+    if($('pause').classList.contains('show')){ showOv('pause',false); return; }
+    if(['title','result','about','gallery','sources','case','fire'].some(id=>$(id).classList.contains('show'))) return;
+    if(!['dialog','quiz'].some(id=>$(id).classList.contains('show'))) showOv('pause',true);
+  }
+});
+
+/* ================= 输入 ================= */
+const KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right'};
+document.addEventListener('keydown',e=>{
+  if(KEYMAP[e.key]){ keys[KEYMAP[e.key]]=true; e.preventDefault(); }
+  else if(e.key===' '||e.key==='e'||e.key==='E'||e.key==='Enter'){ interact(); e.preventDefault(); }
+});
+document.addEventListener('keyup',e=>{ if(KEYMAP[e.key]){ keys[KEYMAP[e.key]]=false; e.preventDefault(); } });
+function bindPad(btn,k){ btn.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;}); btn.addEventListener('pointerup',()=>keys[k]=false); btn.addEventListener('pointerleave',()=>keys[k]=false); }
+bindPad(document.querySelector('#pad .up'),'up'); bindPad(document.querySelector('#pad .lf'),'left');
+bindPad(document.querySelector('#pad .dn'),'down'); bindPad(document.querySelector('#pad .rt'),'right');
+$('btnA').addEventListener('pointerdown',e=>{e.preventDefault();interact();});
+
+/* 移动（网格步进，复古手感） */
+setInterval(()=>{
+  if(overlayOpen()) return;
+  if(smokeSlow>0){ smokeSlow--; return; }
+  let dx=0,dy=0;
+  if(keys.left)dx=-1; else if(keys.right)dx=1;
+  if(dx===0){ if(keys.up)dy=-1; else if(keys.down)dy=1; }   // 轴互斥：禁止斜走
+  if(dx===0&&dy===0){ state.moving=false; return; }
+  state.moving=true; state.dir= dx!==0?(dx>0?2:1):(dy>0?0:3);
+  const nx=state.px+dx, ny=state.py+dy;
+  if(nx<0||nx>=COLS||ny<0||ny>=ROWS) return;
+  const nch=map[ny][nx];
+  if(SOLID.includes(nch)){
+    if(nch==='~') toast('🔥 火墙挡路！先完成逃生决策让它熄灭');
+    return;
+  }
+  if(isDoorTile(nx,ny)){ state.px=nx; state.py=ny; doorChoice(DOORS.find(d=>d.x===nx&&d.y===ny)); return; }
+  if(nch==='⌁'){
+    if(state.items.includes('ext')){
+      state.items.splice(state.items.indexOf('ext'),1);
+      map[ny]=map[ny].slice(0,nx)+'.'+map[ny].slice(nx+1);
+      state.px=nx; state.py=ny; sRight();
+      toast('🧯 灭火器扑灭了火苗，抄近路成功！');
+    } else toast('🔥 小火苗挡路——去捡灭火器（🧯）！');
+    return;
+  }
+  if(state.scene==='dorm'&&nx>=28&&ny>=7&&ny<=9){ toast('宿舍门现在不用打开，先排查隐患！'); return; }
+  state.px=nx; state.py=ny;
+  if(nch==='%'){
+    if(state.items.includes('mask')){ toast('😷 防烟面罩护你穿过浓烟'); }
+    else if(state.items.includes('towel')){ state.items.splice(state.items.indexOf('towel'),1); toast('🧻 湿毛巾帮你挡了一次浓烟！'); }
+    else smokeSlow=1;
+  }
+  if(nch==='?'){
+    const ni=NODES.findIndex(n=>n.x===nx&&n.y===ny);
+    if(ni>=0&&!state.qDone[ni]) openQuizFor(ni);
+  }
+  const it=ITEMS.find(o=>o.x===nx&&o.y===ny);
+  if(it&&!state.items.includes(it.k)){
+    state.items.push(it.k);
+    map[ny]=map[ny].slice(0,nx)+'.'+map[ny].slice(nx+1);
+    toast('🎒 获得道具：'+it.name); beep(880,.07); setTimeout(()=>beep(1318,.09),80);
+  }
+},135);
+
+/* ================= 渲染 ================= */
+function drawTile(x,y,ch){
+  const px=x*TILE, py=y*TILE;
+  const R=(fx,fy,fw,fh,c)=>{ ctx.fillStyle=c; ctx.fillRect(px+fx,py+fy,fw,fh); };
+  switch(ch){
+    case '#': // 墙体：砖纹
+      R(0,0,16,16,'#2e3550'); R(0,0,16,2,'#3d4568');
+      R(0,4,16,1,'#262c44'); R(0,9,16,1,'#262c44'); R(0,14,16,1,'#262c44');
+      R(7,0,1,4,'#262c44'); R(3,5,1,4,'#262c44'); R(11,10,1,4,'#262c44'); R(5,15,1,1,'#262c44');
+      break;
+    case 'w': // 窗户
+      R(0,0,16,16,'#2e3550'); R(2,2,12,12,'#7fb4d9'); R(3,3,10,5,'#b8e2f7');
+      R(7,2,2,12,'#2e3550'); R(2,7,12,2,'#2e3550'); R(2,14,12,2,'#3d4568');
+      R(0,0,16,1,'#3d4568');
+      break;
+    case '.': // 地板：木纹
+      if(state.scene==='corridor'){ R(0,0,16,16,'#3a3f52'); R(0,0,16,1,'#454b60'); R(8,0,1,16,'#33384a'); }
+      else{ R(0,0,16,16,'#6b5a43'); R(0,13,16,3,'#5d4e3a'); R(8,0,1,13,'#5d4e3a'); R(3,5,2,1,'#776450'); R(12,9,2,1,'#776450'); }
+      break;
+    case 'B': // 床
+      R(0,0,16,16,'#6b4a2f'); R(2,1,12,2,'#8a5a33'); R(1,1,2,14,'#8a5a33'); R(13,1,2,14,'#8a5a33');
+      R(2,3,12,3,'#f2efe6'); R(2,3,12,1,'#d9d2c0');
+      break;
+    case 'p': // 枕头
+      R(2,1,10,10,'#f7f4ec'); R(2,1,10,2,'#ffffff'); R(2,9,10,2,'#d9d2c0'); R(2,1,3,10,'#eae4d4');
+      break;
+    case 'b': // 被子
+      R(0,0,16,16,'#4a90d9'); R(0,0,16,2,'#6fb0ef'); R(0,4,16,1,'#3a7abf'); R(0,8,16,1,'#3a7abf'); R(0,13,16,2,'#3a7abf');
+      break;
+    case 'o': // 手机（充电中）
+      R(4,0,8,14,'#222'); R(5,1,6,9,'#aef0ae'); R(6,3,4,5,'#d9ffd9');
+      R(6,11,4,1,'#ffd166'); R(6,13,1,1,'#8fd3ff'); R(7,14,2,3,'#444');
+      break;
+    case 'S': // 床上插排
+      R(1,2,14,9,'#2b2b33'); R(1,2,14,1,'#4a4a55');
+      R(2,3,3,3,'#ff5252'); R(7,4,3,3,'#7a7f8c'); R(11,4,3,3,'#7a7f8c');
+      R(5,5,1,1,'#cfd8dc'); R(9,5,1,1,'#cfd8dc'); R(13,5,1,1,'#cfd8dc');
+      R(4,11,2,5,'#555'); R(6,13,3,1,'#555'); R(6,15,3,1,'#555');
+      break;
+    case 's': // 桌上插排（过载：多个插头）
+      R(1,1,14,8,'#2b2b33'); R(1,1,14,1,'#4a4a55');
+      R(2,2,3,3,'#ff5252'); R(7,3,3,3,'#7a7f8c'); R(11,3,3,3,'#7a7f8c');
+      R(4,2,1,2,'#cfd8dc'); R(8,2,1,2,'#cfd8dc'); R(12,2,1,2,'#cfd8dc');
+      R(15,4,1,4,'#555'); R(14,8,3,1,'#555');
+      break;
+    case 'D': // 书桌
+      R(0,2,16,5,'#b9834f'); R(0,2,16,1,'#d09a63'); R(0,6,16,2,'#8a5a33');
+      R(1,8,14,5,'#9c6b3f'); R(1,10,14,1,'#7a4f2e'); R(8,11,2,2,'#5a3c24');
+      R(1,13,2,3,'#6b4a2f'); R(13,13,2,3,'#6b4a2f');
+      break;
+    case 'C': // 椅子
+      R(3,1,10,2,'#5a6478'); R(3,3,2,9,'#5a6478'); R(11,3,2,9,'#5a6478');
+      R(3,3,10,8,'#6d7891'); R(4,4,8,1,'#7f8ba6'); R(3,12,10,2,'#3d4458');
+      break;
+    case 'u': // 水杯（倾倒）
+      R(4,2,8,8,'#eef2f6'); R(5,3,6,2,'#8fd3ff'); R(4,2,8,1,'#ffffff');
+      R(12,3,2,5,'#eef2f6'); R(5,10,3,2,'#9fd3f2');
+      break;
+    case 'v': // 水渍
+      R(3,12,10,3,'#9fd3f2'); R(5,11,6,2,'#b8e2f7'); R(2,13,2,2,'#9fd3f2'); R(6,12,2,1,'#eaf6ff');
+      break;
+    case 'x': // 破损电线+火花
+      R(0,8,7,2,'#555'); R(9,8,7,2,'#555'); R(0,10,7,1,'#3a3a3a'); R(9,10,7,1,'#3a3a3a');
+      R(7,5,2,4,'#ffe066'); R(6,6,2,2,'#fff3b0'); R(6,4,1,1,'#ffe066'); R(8,3,1,1,'#ff8c42');
+      break;
+    case 'K': // 电热水壶（违禁）
+      R(3,2,10,12,'#cfd8dc'); R(3,2,10,2,'#aeb9bf'); R(3,4,2,6,'#b8c2c8');
+      R(13,5,2,6,'#cfd8dc'); R(13,5,2,1,'#aeb9bf'); R(10,0,3,3,'#8a909e');
+      R(13,1,3,3,'#ff5252'); R(5,14,8,2,'#8a909e'); R(6,14,2,2,'#ffd166');
+      break;
+    case 'N': // 床头柜
+      R(0,0,16,16,'#8a5a33'); R(0,0,16,1,'#a06b3f'); R(1,2,14,10,'#7a4f2e'); R(1,5,14,1,'#5a3c24');
+      R(12,6,2,3,'#cfd8dc'); R(1,12,14,2,'#6b4a2f');
+      break;
+    case 'T': // 衣柜
+      R(0,0,16,16,'#7a5a3a'); R(0,0,16,2,'#8f6a45'); R(7,1,2,14,'#5d4430');
+      R(2,2,4,8,'#8f6a45'); R(10,2,4,8,'#8f6a45'); R(2,5,4,1,'#5d4430'); R(10,5,4,1,'#5d4430');
+      R(3,6,1,1,'#cfd8dc'); R(11,6,1,1,'#cfd8dc'); R(0,14,16,2,'#5d4430');
+      break;
+    case 'r': // 地毯
+      R(1,12,14,4,'#c05440'); R(1,12,14,1,'#d96a52'); R(3,13,10,1,'#a04a38'); R(2,14,1,1,'#ffd166'); R(12,14,1,1,'#ffd166');
+      break;
+    case 'F': // 通风橱
+      R(0,0,16,16,'#6b7488'); R(0,0,16,2,'#7f8ba6'); R(1,2,14,12,'#57606e');
+      R(3,3,10,8,'#9fd3f2'); R(4,4,8,2,'#d9f0ff'); R(3,11,10,1,'#3d4458'); R(7,11,2,2,'#cfd8dc');
+      break;
+    case 'E': // 电炉（运行中）
+      R(1,4,14,10,'#3d4458'); R(1,4,14,1,'#4d5468'); R(2,5,12,8,'#2b3348');
+      R(4,7,8,2,'#ff5252'); R(4,7,8,1,'#ff8c42'); R(3,6,2,4,'#ff5252'); R(11,6,2,4,'#ff5252');
+      R(5,13,2,2,'#8fd3ff');
+      break;
+    case 'R': // 试剂架
+      R(0,0,16,16,'#8a5a33'); R(0,0,16,1,'#a06b3f'); R(0,5,16,1,'#6b4a2f'); R(0,10,16,1,'#6b4a2f');
+      R(2,0,3,5,'#ff5252'); R(7,0,3,5,'#3ddc84'); R(12,0,3,5,'#ffd166');
+      R(2,5,3,5,'#4a90d9'); R(7,5,3,5,'#9b59b6'); R(12,5,3,5,'#ff8c42');
+      R(2,1,3,1,'#ffffff'); R(7,1,3,1,'#ffffff'); R(12,1,3,1,'#ffffff');
+      break;
+    case 'A': // 酒精灯
+      R(6,5,4,7,'#cfd8dc'); R(6,5,4,1,'#aeb9bf'); R(7,3,2,3,'#8a909e');
+      R(7,0,2,3,'#ffd166'); R(8,1,1,2,'#ff8c42'); R(5,11,6,2,'#aeb9bf'); R(5,13,6,2,'#8a909e');
+      break;
+    case 'Y': // 纸堆
+      R(2,5,12,10,'#f2efe6'); R(2,5,12,2,'#ffffff'); R(2,8,12,1,'#d9d2c0'); R(2,12,12,1,'#d9d2c0');
+      R(2,6,8,1,'#d9d2c0'); R(2,10,6,1,'#d9d2c0');
+      break;
+    case 'V': // 水槽
+      R(2,3,12,11,'#eef2f6'); R(2,3,12,2,'#ffffff'); R(3,5,10,7,'#8fd3ff'); R(5,7,6,1,'#b8e2f7');
+      R(12,0,2,4,'#aeb9bf'); R(12,4,3,2,'#aeb9bf'); R(12,6,1,2,'#8fd3ff'); R(4,13,8,1,'#9fd3f2');
+      break;
+    case 'Z': // 气瓶
+      R(5,1,6,13,'#4a90d9'); R(5,1,6,2,'#8fc3ef'); R(6,4,4,6,'#3a7abf'); R(7,5,2,2,'#ffd166');
+      R(4,0,8,2,'#aeb9bf'); R(6,14,4,2,'#2b5a8f');
+      break;
+    case 'O': // 烘箱（运行中）
+      R(1,2,14,12,'#8a909e'); R(1,2,14,1,'#aeb9bf'); R(3,4,7,6,'#3a3f52'); R(4,5,5,1,'#ff8c42');
+      R(3,3,2,2,'#ff5252'); R(11,7,2,5,'#5a6478'); R(2,14,12,2,'#6d7488');
+      break;
+    case 'M': // 多媒体讲台
+      R(0,0,16,16,'#2b3348'); R(0,0,16,1,'#3d4568'); R(2,2,12,6,'#3f7fbf'); R(3,3,10,1,'#7fb4d9');
+      R(2,9,12,2,'#3d4458'); R(3,10,3,1,'#ffd166'); R(7,10,3,1,'#3ddc84');
+      R(2,12,12,3,'#232a3c'); R(3,12,2,2,'#cfd8dc');
+      break;
+    case 'J': // 饮水机
+      R(3,1,10,13,'#eef2f6'); R(3,1,10,1,'#ffffff'); R(4,4,8,3,'#8fd3ff'); R(4,4,8,1,'#b8e2f7');
+      R(5,8,2,2,'#8fd3ff'); R(9,8,2,2,'#ff5252'); R(6,9,2,2,'#ff5252');
+      R(3,13,10,2,'#aeb9bf'); R(4,15,8,1,'#5a6478');
+      break;
+    case 'Q': // 空调
+      R(1,2,14,8,'#eef2f6'); R(1,2,14,1,'#ffffff'); R(2,4,12,1,'#aeb9bf'); R(2,6,12,1,'#aeb9bf'); R(2,8,12,1,'#aeb9bf');
+      R(12,9,2,2,'#3ddc84');
+      break;
+    case 'G': // 黑板
+      R(0,0,16,16,'#2f5e3f'); R(0,0,16,1,'#3d7a52'); R(0,15,16,1,'#8a5a33');
+      R(2,5,8,1,'#e8e2d0'); R(6,8,10,1,'#e8e2d0'); R(4,11,7,1,'#e8e2d0');
+      break;
+    case '~': // 火墙（动画）
+      { const f2=((animT/8|0)+(x+y))%2;
+        R(2,f2?1:2,12,14,'#3a1414'); R(1,14,14,2,'#2b0a0a');
+        R(4,3+f2,8,8,'#e63946'); R(6,5+f2,4,5,'#ff8c42'); R(7,7+f2,2,3,'#ffe066');
+        R(3,2+f2,2,3,'#ff8c42'); R(11,4+f2,2,3,'#ff8c42'); }
+      break;
+    case '%': // 浓烟（缓慢飘动）
+      { const f2=((animT/10|0)+x+y)%3;
+        R(3,6-f2,10,7,'#7d8291'); R(5,4-f2,6,4,'#989dad'); R(6,3-f2,4,2,'#b3b8c4'); }
+      break;
+    case '&': // 断梁残骸
+      R(2,9,12,5,'#4a3a2f'); R(2,9,12,1,'#5d4430'); R(3,12,6,2,'#33302a'); R(11,11,3,3,'#3a2f26');
+      break;
+    case '?': // 答题节点
+      { const pu=((animT/16|0)+x+y)%2;
+        R(1,1,14,14,'#1b2440'); R(1,1,14,1,'#33406a'); R(1,14,14,1,'#33406a');
+        ctx.font='bold 10px sans-serif'; ctx.textAlign='center'; ctx.fillStyle=pu?'#ffd166':'#ffe9ad';
+        ctx.fillText('?',px+8,py+12); }
+      break;
+    case 't': // 湿毛巾
+      R(2,5,12,10,'#4a90d9'); R(2,5,12,2,'#6fb0ef'); R(2,9,12,1,'#3a7abf'); R(5,7,6,1,'#eaf6ff');
+      break;
+    case 'm': // 防烟面罩
+      R(4,4,8,7,'#f2efe6'); R(4,4,8,1,'#ffffff'); R(6,6,4,2,'#8fd3ff'); R(3,9,2,1,'#e8e2d0'); R(11,9,2,1,'#e8e2d0');
+      break;
+    case 'f': // 灭火器
+      R(5,1,6,13,'#e63946'); R(5,1,6,2,'#ff8c42'); R(7,5,2,3,'#ffe066'); R(5,14,6,2,'#33302a'); R(8,0,1,2,'#2b2b33');
+      break;
+    case '⌁': // 小火苗（可用灭火器扑灭）
+      { const f2=((animT/6|0)+x+y)%2;
+        R(6,2+f2,4,11,'#3a1414'); R(6,5+f2,4,5,'#ff8c42'); R(7,7+f2,2,3,'#ffe066'); R(5,13,6,2,'#2b0a0a'); }
+      break;
+    case '!': // 坠落预警
+      { const pu=((animT/10|0)+x)%2;
+        R(0,0,16,16,pu?'rgba(255,95,95,.28)':'rgba(255,95,95,.12)');
+        ctx.font='bold 11px sans-serif'; ctx.textAlign='center'; ctx.fillStyle=pu?'#ff5f5f':'#ff8c8c';
+        ctx.fillText('!',px+8,py+12); }
+      break;
+    default: R(0,0,16,16,'#0a0d1a');
+  }
+}
+function drawCheck(x,y){ const px=x*TILE,py=y*TILE; ctx.strokeStyle='#3ddc84'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+4,py+8); ctx.lineTo(px+7,py+11); ctx.lineTo(px+12,py+4); ctx.stroke(); }
+function drawCross(x,y){ const px=x*TILE,py=y*TILE; ctx.strokeStyle='#ff5f5f'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+4,py+4); ctx.lineTo(px+12,py+12); ctx.moveTo(px+12,py+4); ctx.lineTo(px+4,py+12); ctx.stroke(); }
+function drawMark(x,y){ const px=x*TILE, py=y*TILE-3+Math.round(Math.sin(animT/14)*2); ctx.fillStyle='#ffd166'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('?',px+8,py+12); }
+/* 靠近隐患时头顶提示 */
+function drawPrompt(){
+  if(!SCENES[state.scene]||overlayOpen()) return;
+  const h=curHazards.find(hz=>!state.found.includes(hz.id) && Math.abs(hz.x-state.px)+Math.abs(hz.y-state.py)<=1);
+  if(!h) return;
+  const x=state.px*TILE+8, y=state.py*TILE-7;
+  ctx.font='10px sans-serif'; ctx.textAlign='center';
+  const label=h.name+'，按E调查';
+  const w=ctx.measureText(label).width+10;
+  ctx.fillStyle='rgba(8,12,26,.9)'; ctx.fillRect(x-w/2,y-13,w,13);
+  ctx.fillStyle='#ffd166'; ctx.fillText(label,x,y-2);
+}
+/* ============ 答题过场动画 ============ */
+function startFx(kind, cb){
+  const tok=++fxToken;
+  state.fx={kind:kind,t:0};
+  fxP=[];
+  const col= kind==='ok'?['#3ddc84','#ffe066','#8fd3ff','#ffffff']:['#ff5f5f','#ff8c42','#e63946','#ffd166'];
+  for(let i=0;i<42;i++){
+    fxP.push({x:240,y:150,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*9-2,life:45+Math.random()*25,c:col[i%col.length],s:1+Math.random()*2});
+  }
+  setTimeout(()=>{ if(fxToken!==tok) return; state.fx=null; if(cb)cb(); }, kind==='ok'?1050:850);
+}
+function drawFx(){
+  if(!state.fx) return;
+  const f=state.fx;
+  ctx.fillStyle='rgba(6,8,18,.55)'; ctx.fillRect(0,0,480,320);
+  const p=Math.min(f.t/9,1);
+  const sc=1+(1-p)*0.6;
+  ctx.save(); ctx.translate(240,142); ctx.scale(sc,sc);
+  ctx.textAlign='center'; ctx.font='bold 90px sans-serif';
+  ctx.fillStyle=f.kind==='ok'?'#3ddc84':'#ff5f5f';
+  ctx.fillText(f.kind==='ok'?'✓':'✗',0,28); ctx.restore();
+  ctx.font='13px sans-serif'; ctx.textAlign='center';
+  ctx.fillStyle=f.kind==='ok'?'#c9f7e0':'#ffd0d0';
+  ctx.fillText(f.kind==='ok'?'逃生选择正确！':'危险！',240,196);
+  fxP.forEach(pt=>{
+    pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.16; pt.life--;
+    ctx.globalAlpha=Math.max(Math.min(pt.life/55,1),0);
+    ctx.fillStyle=pt.c; ctx.fillRect(pt.x-pt.s,pt.y-pt.s,pt.s*2,pt.s*2);
+  });
+  ctx.globalAlpha=1;
+  state.fx.t++;
+}
+function drawPlayer(){
+  const rows=SPRITES[state.gender], pal=state.gender==='male'?PAL:PAL_F;
+  const bob=state.moving?(Math.floor(animT/7)%2?1:0):0;
+  const blink=(animT%200)<8;
+  const ox=state.px*TILE, oy=state.py*TILE-(rows.length-16)+bob;
+  for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.')continue; const xx=state.dir===1?(row.length-1-x):x; let col=pal[ch]; if(ch==='B'&&blink) col=pal['W']; ctx.fillStyle=col||'#fff'; ctx.fillRect(ox+xx,oy+y,1,1); } }
+}
+/* 火场火星飘落 */
+function drawEmbers(){
+  for(let i=0;i<12;i++){
+    const ex=(i*53+animT*2)%480, ey=(animT*3+i*67)%320;
+    ctx.globalAlpha=0.45+0.3*Math.sin(animT/8+i);
+    ctx.fillStyle='#ff8c42'; ctx.fillRect(ex,ey,3,5);
+    ctx.fillStyle='#ffe066'; ctx.fillRect(ex,ey,1,2);
+  }
+  ctx.globalAlpha=1;
+}
+function drawDoorLabels(){
+  ctx.font='11px sans-serif'; ctx.textAlign='right';
+  ctx.fillStyle='#8fd3ff';
+  ctx.fillText('电梯',23*TILE+8,8*TILE-4);
+  ctx.fillText('窗台',23*TILE+8,9*TILE-4);
+  const ga=0.25+0.2*Math.sin(animT/10);
+  ctx.fillStyle='rgba(61,220,132,'+ga.toFixed(2)+')';
+  ctx.fillRect(19*TILE,10*TILE-12,6*TILE,11);
+  ctx.fillStyle='#3ddc84';
+  ctx.fillText('安全出口',23*TILE+8,10*TILE-4);
+  DOORS.forEach(d=>{ ctx.fillStyle='#7a5a3a'; ctx.fillRect(d.x*TILE,d.y*TILE,2,16); });
+}
+function drawHUD(){
+  ctx.fillStyle='rgba(8,12,26,.85)'; ctx.fillRect(0,0,480,22);
+  ctx.font='12px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#cfe0ff';
+  ctx.fillText(state.scene==='corridor'?'🚪 火场逃生 · 选出口':SCENES[state.scene].name,6,15);
+  ctx.textAlign='center';
+  if(SCENES[state.scene]){ ctx.fillStyle='#ffd166'; ctx.fillText('隐患 '+state.sceneFound+'/'+curHazards.length,240,15); }
+  if(state.scene==='corridor'){
+    ctx.fillStyle=state.corT<=20?'#ff5f5f':'#ff8c42';
+    ctx.fillText('⏱ '+state.corT+'s',160,15);
+    ctx.fillStyle='#ffd166';
+    ctx.fillText('决策 '+state.qDone.filter(Boolean).length+'/'+QUIZ.length,250,15);
+    ctx.textAlign='left';
+    ctx.fillStyle='#9fb4d8';
+    ctx.fillText('🎒 '+(state.items.length?state.items.map(k=>ITEM_ICON[k]).join(''):'无'),6,40);
+    ctx.textAlign='center';
+  }
+  if(state.mode==='hard'&&SCENES[state.scene]){ const s=String(state.timeLeft%60).padStart(2,'0'); ctx.fillStyle=state.timeLeft<=60?'#ff5f5f':'#ffd166'; ctx.fillText('⏱ '+Math.floor(state.timeLeft/60)+':'+s,180,15); }
+  ctx.textAlign='right'; ctx.fillStyle='#3ddc84'; ctx.fillText('得分 '+state.score,474,15);
+}
+function draw(){
+  ctx.clearRect(0,0,480,320);
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++) drawTile(x,y,map[y][x]);
+  if(state.scene==='corridor'){ drawFireGlow(); }
+  if(state.scene==='dorm'){ drawLightShaft(); }
+  drawVignette();
+  if(state.scene==='corridor') drawDoorLabels();
+  if(SCENES[state.scene]){
+    curHazards.forEach(h=>{ if(state.found.includes(h.id)) drawCheck(h.x,h.y); });
+    drawPrompt();
+  } else {
+    DOORS.forEach(d=>{ if(d.failed) drawCross(d.x,d.y); });
+    NODES.forEach((n,i)=>{ if(state.qDone[i]) drawCheck(n.x,n.y); });
+    drawEmbers();
+  }
+  drawPlayer(); drawHUD();
+  if(state.fx) drawFx();
+  if(state.fade.a>0){ ctx.fillStyle='rgba(4,6,14,'+state.fade.a.toFixed(2)+')'; ctx.fillRect(0,0,480,320); }
+}
+/* 火墙辉光 / 窗光 / 暗角 */
+function drawFireGlow(){
+  for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+    const ch=map[y][x];
+    if(ch==='~'||ch==='⌁'){
+      ctx.globalAlpha=0.06+0.04*Math.sin(animT/5+x+y);
+      ctx.fillStyle='#ff8c42';
+      ctx.fillRect(x*TILE-10,y*TILE-10,36,36);
+    }
+  }
+  ctx.globalAlpha=1;
+}
+function drawLightShaft(){
+  ctx.globalAlpha=0.06; ctx.fillStyle='#ffffff';
+  ctx.beginPath(); ctx.moveTo(56,0); ctx.lineTo(152,0); ctx.lineTo(240,320); ctx.lineTo(96,320); ctx.closePath(); ctx.fill();
+  ctx.globalAlpha=1;
+}
+const vGrad=ctx.createRadialGradient(240,160,110,240,160,330);
+vGrad.addColorStop(0,'rgba(0,0,0,0)'); vGrad.addColorStop(1,'rgba(0,0,0,.30)');
+function drawVignette(){ ctx.fillStyle=vGrad; ctx.fillRect(0,0,480,320); }
+function loop(){
+  animT++;
+  if(state.fade.dir!==0){
+    state.fade.a=Math.min(1,Math.max(0,state.fade.a+state.fade.dir*0.08));
+    if(state.fade.a>=1&&state.fade.dir===1){ state.fade.dir=0; const cb=state.fade.cb; state.fade.cb=null; if(cb)cb(); }
+    if(state.fade.a<=0&&state.fade.dir===-1){ state.fade.dir=0; }
+  }
+  draw(); 
+  if($('result').classList.contains('show')) drawRoute();
+  if($('case').classList.contains('show')) drawCase();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+draw();
+</script>
+</body>
+</html>
