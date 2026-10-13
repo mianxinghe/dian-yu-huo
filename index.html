@@ -692,6 +692,11 @@ const SPRITES={
 };
 const PAL={ h:'#3a2c1e', s:'#ffe3c8', P:'#2b2b38', k:'#ffffff', b:'#ff9d9d', B:'#a04a40', T:'#4a9de0', n:'#44507a', F:'#2e2e38', f:'#f0f0f0' };
 const PAL_F={ h:'#6b3f23', s:'#ffe3c8', P:'#2b2b38', k:'#ffffff', b:'#ff9d9d', B:'#a04a40', T:'#f07a9c', K:'#9c66c8', F:'#2e2e38', f:'#f0f0f0' };
+/* 卡通角色配色（程序化矢量绘制用） */
+const CHIBI={
+ male:{hair:'#3a2c1e',hair2:'#5a4632',shirt:'#4a9de0',shirt2:'#3a84c8',pants:'#44507a',skin:'#ffe3c8',skinS:'#f2cfae',shoes:'#2e2e38',iris:'#4a3526'},
+ female:{hair:'#6b3f23',hair2:'#8a5a36',shirt:'#f07a9c',shirt2:'#d95f86',skirt:'#9c66c8',skin:'#ffe3c8',skinS:'#f2cfae',shoes:'#2e2e38',iris:'#4a3526'},
+};
 
 /* ================= 游戏状态 ================= */
 let state={
@@ -738,8 +743,9 @@ $('mute').onclick=()=>{muted=!muted;$('mute').textContent=muted?'🔇':'🔊';};
 function drawAvatar(can,gender){
   const c=can.getContext('2d'); c.imageSmoothingEnabled=false;
   c.fillStyle='#141a2e'; c.fillRect(0,0,56,56);
-  const rows=SPRITES[gender], pal=gender==='male'?PAL:PAL_F, s=56/rows.length;
-  for(let y=0;y<16;y++){ const row=rows[y]; for(let x=0;x<16;x++){ const ch=row[x]; if(ch!=='.'){ c.fillStyle=pal[ch]||'#fff'; c.fillRect(x*s,y*s,s,s); } } }
+  c.save(); c.translate(28,50); c.scale(1.28,1.28);
+  drawChibi(c,gender,0,0,0,false);
+  c.restore();
 }
 drawAvatar($('av-m'),'male'); drawAvatar($('av-f'),'female');
 function selToggle(btn,group){ group.forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
@@ -1442,7 +1448,63 @@ setInterval(()=>{
   }
 },135);
 
-/* ================= 渲染 ================= */
+/* ============ 卡通角色（程序化矢量绘制，高分辨率圆润造型） ============ */
+function _el(c,x,y,rx,ry){ c.beginPath(); c.ellipse(x,y,rx,ry,0,0,Math.PI*2); }
+function _rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function drawChibi(c,gender,ox,oy,dir,blinkOn){
+  const P=CHIBI[gender];
+  c.save();
+  c.translate(ox,oy);
+  if(dir===1) c.scale(-1,1);
+  const F=(fx,fy,fw,fh,r,col)=>{ c.fillStyle=col; _rr(c,fx,fy,fw,fh,r); c.fill(); };
+  const E=(x,y,rx,ry,col)=>{ _el(c,x,y,rx,ry); c.fillStyle=col; c.fill(); };
+  /* 脚下阴影 */
+  E(0,16,6.2,1.5,'rgba(0,0,0,.20)');
+  /* 腿 / 裙 */
+  if(gender==='female'){
+    c.fillStyle=P.skirt; c.beginPath();
+    c.moveTo(-5.2,7.5); c.lineTo(5.2,7.5); c.lineTo(7.2,12.5); c.lineTo(-7.2,12.5); c.closePath(); c.fill();
+    F(-3.4,12.5,2.4,2.6,1,P.skin); F(1.0,12.5,2.4,2.6,1,P.skin);
+  } else {
+    F(-4.8,7.5,3.2,7.5,1.2,P.pants); F(1.6,7.5,3.2,7.5,1.2,P.pants);
+  }
+  /* 鞋 */
+  F(-6.4,14.4,5.6,2.6,1.3,P.shoes); F(0.8,14.4,5.6,2.6,1.3,P.shoes);
+  /* 躯干 */
+  F(-6.2,-5.2,12.4,13,4.2,P.shirt);
+  F(-6.2,-5.2,12.4,4.4,4.2,P.shirt2);
+  /* 手臂 */
+  F(-9.2,-4.6,3.0,9.0,1.5,P.skin); F(6.2,-4.6,3.0,9.0,1.5,P.skin);
+  F(-9.2,-4.6,3.0,3.2,1.5,P.shirt2); F(6.2,-4.6,3.0,3.2,1.5,P.shirt2);
+  /* 头 */
+  E(0,-13.6,7.9,8.2,P.skin);
+  /* 女生长发两侧 */
+  if(gender==='female'){ F(-9.4,-17.2,3.6,12.5,1.8,P.hair); F(5.8,-17.2,3.6,12.5,1.8,P.hair); }
+  /* 头顶头发 */
+  c.beginPath(); c.arc(0,-15,7.95,Math.PI,0); c.fillStyle=P.hair; c.fill();
+  /* 刘海 */
+  if(gender==='female'){
+    F(-6.6,-18.4,13.2,3.6,1.8,P.hair2); F(-2.6,-17.6,5.2,3.2,1.6,P.hair2);
+  } else {
+    F(-6.4,-18.6,12.8,3.4,1.7,P.hair2); F(-3.2,-17.4,6.4,2.8,1.4,P.hair2);
+  }
+  /* 眼睛 */
+  if(blinkOn){
+    c.strokeStyle='#2b2b38'; c.lineWidth=1.1; c.lineCap='round';
+    c.beginPath(); c.moveTo(-6.4,-13.4); c.lineTo(-2.2,-13.4); c.moveTo(2.2,-13.4); c.lineTo(6.4,-13.4); c.stroke();
+  } else {
+    E(-4.2,-13.2,2.35,3.0,'#ffffff'); E(4.2,-13.2,2.35,3.0,'#ffffff');
+    E(-4.2,-12.6,1.75,1.75,P.iris); E(4.2,-12.6,1.75,1.75,P.iris);
+    E(-4.2,-12.6,1.05,1.05,'#14141d'); E(4.2,-12.6,1.05,1.05,'#14141d');
+    E(-4.8,-13.1,0.5,0.5,'#ffffff'); E(3.6,-13.1,0.5,0.5,'#ffffff');
+  }
+  /* 腮红 */
+  E(-5.9,-10.2,1.7,1.0,'rgba(255,110,110,.35)'); E(5.9,-10.2,1.7,1.0,'rgba(255,110,110,.35)');
+  /* 嘴 */
+  c.strokeStyle='#a04a40'; c.lineWidth=1.1; c.lineCap='round';
+  c.beginPath(); c.arc(0,-10.4,2.1,0.12*Math.PI,0.88*Math.PI); c.stroke();
+  c.restore();
+}
 function drawTile(x,y,ch){
   const px=x*TILE, py=y*TILE;
   const R=(fx,fy,fw,fh,c)=>{ ctx.fillStyle=c; ctx.fillRect(px+fx,py+fy,fw,fh); };
@@ -1666,11 +1728,9 @@ function drawFx(){
   state.fx.t++;
 }
 function drawPlayer(){
-  const rows=SPRITES[state.gender], pal=state.gender==='male'?PAL:PAL_F;
   const bob=state.moving?(Math.floor(animT/7)%2?1:0):0;
   const blink=(animT%200)<8;
-  const ox=state.px*TILE, oy=state.py*TILE-(rows.length-16)+bob;
-  for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.')continue; const xx=state.dir===1?(row.length-1-x):x; let col=pal[ch]; if(ch==='P'&&blink) col=pal['W']; ctx.fillStyle=col||'#fff'; ctx.fillRect(ox+xx,oy+y,1,1); } }
+  drawChibi(ctx,state.gender,state.px*TILE+8,state.py*TILE+16+bob,state.dir,blink);
 }
 /* 火场火星飘落 */
 function drawEmbers(){
