@@ -630,52 +630,60 @@ const SOURCES=[
 /* ================= 角色像素图（16×16） ================= */
 const SPRITES={
  male:[
-  '......HHHH......',
-  '....HHHHHHHH....',
-  '....HHHHHHHH....',
-  '...HHHHHHHHHH...',
-  '...SSSSSSSSSS...',
-  '...SWWSSSSWWS...',
-  '...SWBSSSSBWS...',
-  '...SSSMMMMSSS...',
-  '....SSSSSSSS....',
-  '.....SSSSSS.....',
+  '................',
+  '....hhhhhhhh....',
+  '...hhhhhhhhhh...',
+  '...hhHHHHHHhh...',
+  '...hhHHHHHHhh...',
+  '...ssssssssss...',
+  '...sWPPssPPWs...',
+  '...sWkPssPkWs...',
+  '...ssssBBssss...',
+  '...ssbbssbbss...',
+  '....ssssssss....',
   '...TTTTTTTTTT...',
-  '..TTTTTTTTTTTT..',
-  '..SSTTTTTTTTSS..',
-  '..SS.TTTTTT.SS..',
-  '...TTTTTTTTTT...',
-  '...TTT....TTT...',
-  '...PPP....PPP...',
-  '...PPP....PPP...',
-  '...FFF....FFF...',
+  '..TTTUTTTTUTTT..',
+  '..sTTTTTTTTTTs..',
+  '..ss.TTTTTT.ss..',
+  '.....TTTTTT.....',
+  '.....nnnnnn.....',
+  '.....nn..nn.....',
+  '.....nn..nn.....',
+  '.....FF..FF.....',
+  '.....ff..ff.....',
+  '................',
+  '................',
   '................',
  ],
  female:[
+  '................',
   '....hhhhhhhh....',
   '...hhhhhhhhhh...',
-  '..hh..hhhh..hh..',
-  '..hhhHHHHHHhhh..',
-  '..hSSSSSSSSSSh..',
-  '..hSWWSSSSWWSh..',
-  '..hSWBSSSSBWSh..',
-  '..hSSSMMMMSSSh..',
-  '..hhSSSSSSSShh..',
-  '..hh.SSSSS.hh...',
-  '..hTTTTTTTTTTh..',
-  '..TTTTTTTTTTTT..',
-  '..SSTTTTTTTTSS..',
-  '..SS.TTTTTT.SS..',
+  '..hh........hh..',
+  '..hhHHHHHHHHhh..',
+  '..hhHHHHHHHHhh..',
+  '..hssssssssssh..',
+  '..hsWPPssPPWsh..',
+  '..hsWkPssPkWsh..',
+  '..hssssBBssssh..',
+  '..hssbbssbbssh..',
+  '..hhsssssssshh..',
+  '..hh.ssssss.hh..',
   '...TTTTTTTTTT...',
-  '...KKKKKKKKKK...',
-  '...SS......SS...',
-  '...SS......SS...',
-  '...FF......FF...',
+  '..sTTTTTTTTTTs..',
+  '..ss.TTTTTT.ss..',
+  '.....TTTTTT.....',
+  '.....KKKKKK.....',
+  '.....KK..KK.....',
+  '.....ss..ss.....',
+  '.....ss..ss.....',
+  '.....FF..FF.....',
+  '.....ff..ff.....',
   '................',
  ],
 };
-const PAL={ H:'#2f2f38', S:'#ffd9b3', W:'#ffffff', B:'#1b1b28', M:'#c96a5a', T:'#3f7fbf', P:'#3a3f66', F:'#26262e' };
-const PAL_F={ h:'#7a5230', H:'#7a5230', S:'#ffd9b3', W:'#ffffff', B:'#1b1b28', M:'#c96a5a', T:'#e07090', K:'#8a5fa8', F:'#26262e' };
+const PAL={ h:'#4a3526', H:'#6b4c34', s:'#ffe0c2', W:'#ffffff', P:'#2b2b38', k:'#ffffff', b:'#ffb3b3', B:'#c96a5a', T:'#3f7fbf', U:'#5a9bd8', n:'#3a3f66', F:'#26262e', f:'#e8e8f0' };
+const PAL_F={ h:'#7a5230', H:'#9c6b42', s:'#ffe0c2', W:'#ffffff', P:'#2b2b38', k:'#ffffff', b:'#ffb3b3', B:'#c96a5a', T:'#e07090', U:'#f096b4', K:'#8a5fa8', F:'#26262e', f:'#e8e8f0' };
 
 /* ================= 游戏状态 ================= */
 let state={
@@ -1654,7 +1662,7 @@ function drawPlayer(){
   const bob=state.moving?(Math.floor(animT/7)%2?1:0):0;
   const blink=(animT%200)<8;
   const ox=state.px*TILE, oy=state.py*TILE-(rows.length-16)+bob;
-  for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.')continue; const xx=state.dir===1?(row.length-1-x):x; let col=pal[ch]; if(ch==='B'&&blink) col=pal['W']; ctx.fillStyle=col||'#fff'; ctx.fillRect(ox+xx,oy+y,1,1); } }
+  for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.')continue; const xx=state.dir===1?(row.length-1-x):x; let col=pal[ch]; if(ch==='P'&&blink) col=pal['W']; ctx.fillStyle=col||'#fff'; ctx.fillRect(ox+xx,oy+y,1,1); } }
 }
 /* 火场火星飘落 */
 function drawEmbers(){
