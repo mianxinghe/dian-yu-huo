@@ -149,6 +149,7 @@
     <div class="row">
       <button class="btn" id="btn-demo">🎬 演示模式</button>
       <button class="btn" id="btn-water">🌊 防溺水特训</button>
+      <button class="btn" id="btn-quake">🏔 地震避险特训</button>
       <button class="btn" id="btn-src0">📚 依据与来源</button>
       <button class="btn" id="btn-gal0">📖 知识图鉴</button>
       <button class="btn" id="btn-about0">ℹ 关于作品</button>
@@ -211,6 +212,7 @@
       <div class="row" style="margin-top:8px">
         <button class="btn" id="btn-share">📋 复制成绩单</button>
         <button class="btn" id="btn-water2">🌊 防溺水特训</button>
+        <button class="btn" id="btn-quake2">🏔 地震避险特训</button>
         <button class="btn" id="btn-about2">ℹ 关于作品</button>
       </div>
       <div style="text-align:center;margin-top:12px">
@@ -552,12 +554,72 @@ const WATERH=[
   act:{q:'同学在湿滑岸边追逐打闹，你会？',opts:['制止他们，退到安全的岸上','加入一起玩','在旁边看着'],ans:0}},
 ];
 
+/* 地震避险特训地图（教学楼：教室+走廊，程序化生成保证网格精确） */
+const QUAKE=(function(){
+  const W=30,H=20,g=[];
+  for(let y=0;y<H;y++){
+    let row='';
+    for(let x=0;x<W;x++){
+      let c='.';
+      if(y===0||y===H-1||x===0||x===W-1) c='#';
+      if(y===0&&((x>=3&&x<=6)||(x>=16&&x<=19))) c='w';       // 窗户（不利避震场所）
+      if(x===14&&y>=1&&y<=18) c='#';                          // 教室/走廊隔墙
+      if(x===14&&y>=9&&y<=11) c='.';                          // 门（震后疏散口）
+      if((y===4||y===5||y===7||y===8)&&x>=5&&x<=9) c='D';     // 课桌
+      if((x===3&&y===3)||(x===8&&y===3)) c='l';               // 吊灯
+      if(x===12&&y===2) c='T';                                // 书柜
+      if(x===12&&y===17) c='T';
+      if(x===10&&y===10) c='M';                               // 讲台
+      if(x===26&&y===3) c='d';                                // 电梯门
+      if(x===26&&y===14) c='k';                               // 楼梯口
+      row+=c;
+    }
+    g.push(row);
+  }
+  return g;
+})();
+
+/* 隐患（地震避险特训关） */
+const QUAKEH=[
+ {id:21,x:3,y:1,name:'震时躲在窗边',icon:'🪟',
+  hint:'安全员提醒：玻璃窗边是震时最危险的位置之一。',
+  why:'应急管理部科普指出：室内最不利的避震场所是“玻璃（包括镜子）和大窗户旁、吊顶吊灯下、没有支撑物的床上”。',
+  right:'就近躲在结实课桌下：伏地、遮挡、手抓牢，护住头颈，远离玻璃窗与吊灯。',
+  src:'依据：应急管理部《地震避险自救互救常识》；中国地震局、教育部《中小学校地震应急避险疏散演练指南》',
+  act:{q:'教室突然晃动，你正坐在窗边，第一反应是？',opts:['立即躲到结实课桌下，护住头颈','跳起来往门外冲','先跑到窗口看看情况'],ans:0}},
+ {id:22,x:13,y:10,name:'慌乱拥挤外逃',icon:'🚪',
+  hint:'安全员提醒：门口已经挤成一团了。',
+  why:'官方科普明确“千万不要慌乱拥挤外逃”，人流对冲会造成踩踏；公共场所地震时“相互压挤而导致人员伤亡”。',
+  right:'震时就地躲避，待震动过后在老师指挥下**有组织、有秩序**地疏散；不拥挤、不推搡、不逆行。',
+  src:'依据：应急管理部《地震避险自救互救常识》“学校避震秘籍”“公共场所避震秘籍”',
+  act:{q:'震动刚停，同学们一起往门口挤，你会？',opts:['按秩序排队，听从指挥依次撤离','使劲往前挤，早点出去','逆行返回教室拿东西'],ans:0}},
+ {id:23,x:26,y:4,name:'震时乘电梯',icon:'🛗',
+  hint:'安全员提醒：电梯门旁边那个按钮，震时可千万别按。',
+  why:'地震时电梯可能断电停运或变形困人。官方科普强调“千万不可在慌乱中跳楼”，震时应立即切断电闸、关掉煤气，走楼梯疏散。',
+  right:'不乘电梯、不跳楼翻窗；走安全楼梯疏散，注意护住头部。',
+  src:'依据：应急管理部《地震避险自救互救常识》“写字楼内避震秘籍”“避震四大常识”',
+  act:{q:'震动停止后准备撤离，你会怎么下楼？',opts:['走安全楼梯，扶扶手有序下行','乘电梯更快','从二楼窗户跳下去'],ans:0}},
+ {id:24,x:26,y:13,name:'疏散通道推挤',icon:'⬇️',
+  hint:'安全员提醒：楼梯口人多，别推。',
+  why:'楼梯是最易发生踩踏的场所：推挤、逆行、弯腰捡物都可能引发连锁摔倒；官方科普要求“有组织地从多路口快速疏散”。',
+  right:'扶稳扶手、靠右有序下行；不推挤、不逆行、不停留、不弯腰捡东西。',
+  src:'依据：应急管理部《地震避险自救互救常识》公共场所避震秘籍',
+  act:{q:'下楼梯时有人推挤，正确的做法是？',opts:['扶稳扶手、顺人流靠右有序下行','加快速度往前冲','蹲下系鞋带，让别人先走'],ans:0}},
+ {id:25,x:22,y:10,name:'震后返回室内取物',icon:'📱',
+  hint:'安全员提醒：别回去拿东西，余震更危险。',
+  why:'官方科普提醒“不要随便返回室内”；强余震可能使受损建筑二次倒塌。若被埋压，应保存体力、用石块敲击发声求救，闻到煤气毒气用湿布捂住口鼻。',
+  right:'撤到开阔地后不返回建筑；被困时保存体力、敲击管道呼救、湿布捂口鼻。',
+  src:'依据：应急管理部《地震避险自救互救常识》“震后自救常识”“户外避震秘籍”',
+  act:{q:'已经撤到操场，你想起手机还落在教室，你会？',opts:['不返回，生命比财物重要','马上回教室取','让同学帮忙一起回去拿'],ans:0}},
+];
+
 /* 场景注册表 */
 const SCENES={
  dorm:{name:'🏠 宿舍隐患排查', map:DORM, hazards:HAZARDS, next:'lab', start:[14,16]},
  lab:{name:'🧪 实验室隐患排查', map:LAB, hazards:LABH, next:'class', start:[14,17]},
  class:{name:'🏫 教室隐患排查', map:CLASS, hazards:CLSH, next:null, start:[14,13]},
- water:{name:'🌊 防溺水特训', map:WATER, hazards:WATERH, next:null, training:true, start:[10,17]},
+ water:{name:'🌊 防溺水特训', map:WATER, hazards:WATERH, next:null, training:'water', start:[10,17]},
+ quake:{name:'🏔 地震避险特训', map:QUAKE, hazards:QUAKEH, next:null, training:'quake', start:[7,15]},
 };
 const TOTAL_H=HAZARDS.length+LABH.length+CLSH.length;
 /* 隐患数据一角（官方实测/数据，知识卡与图鉴共用） */
@@ -583,6 +645,11 @@ const HZ_DATA={
  18:'“六不准”第2条：不擅自与他人结伴游泳——结伴不等于安全',
  19:'“六不准”第6条：不擅自下水施救——手拉手救援易致连环溺水',
  20:'教育部：在水边玩耍、捡拾落水物品是溺水常见原因之一',
+ 21:'应急管理部：室内最不利避震场所＝玻璃/大窗户旁、吊灯下、无支撑的床上',
+ 22:'官方科普：“千万不要慌乱拥挤外逃”——人流对冲会引发踩踏',
+ 23:'“千万不可在慌乱中跳楼”；震时应切断电闸、关掉煤气，走楼梯疏散',
+ 24:'公共场所地震“最忌慌乱”，相互压挤是人员伤亡的重要原因',
+ 25:'“不要随便返回室内”——余震可能让受损建筑二次倒塌',
 };
 const QUIZ=[
  {q:'宿舍电线短路起火，你的第一步应该是？',
@@ -689,6 +756,10 @@ const FAKES={
   {x:16,y:12,name:'救生圈',msg:'救生圈是救命装备——发现有人落水时，从岸上抛给他，比自己下水安全得多。'},
   {x:26,y:14,name:'岸边大树',msg:'树本身不危险——但不要攀爬水边树木，万一失足落水很难自救。'},
  ],
+ quake:[
+  {x:10,y:10,name:'讲台',msg:'讲台本身不是隐患——但震时不要站在讲台旁的空地，要躲到结实课桌下。'},
+  {x:12,y:2,name:'书柜',msg:'书柜要固定在墙上；震时远离可能倾倒的高大家具。'},
+ ],
 };
 
 /* 依据页 */
@@ -706,6 +777,8 @@ const SOURCES=[
  {t:'宁波大学宿舍火灾通报：系电热毯导致（央广网 2025-11-25）',u:'https://news.cnr.cn/native/gd/20251125/t20251125_527441232.shtml'},
  {t:'《高等学校实验室安全规范》（教科信厅函〔2023〕5号）：实验室配备消防设施、隐患排查闭环管理（西安文理学院转发全文）',u:'https://gz.xawl.edu.cn/info/1226/4091.htm'},
  {t:'《高等学校实验室工作规程》（国家教委令第20号）第二十五条：定期检查防火、防爆、防事故安全措施',u:'https://www.gov.cn/zhengce/1992-06/27/content_5713357.htm'},
+ {t:'应急管理部《地震避险自救互救常识》：室内最不利避震场所、学校/公共场所避震秘籍、震后自救',u:'https://www.mem.gov.cn/kp/zrzh/201902/t20190226_366163.shtml'},
+ {t:'中国地震局办公室、教育部办公厅《中小学校地震应急避险疏散演练指南》（2025-10-11印发）',u:'https://www.cea.gov.cn/cea/zwgk/tzgg/5829696/index.html'},
  {t:'教育部《致全国中小学生家长的一封信》：防溺水“六不准”“四个牢记”“正确施救”口诀',u:'https://www.zhaoqing.gov.cn/zqjyj/gkmlpt/content/2/2521/post_2521331.html'},
  {t:'应急管理部防溺水安全知识科普（广东省消防救援总队转载 2026-04-14）',u:'https://gd.119.gov.cn/xfkp/zjts/content/post_4883579.html'},
  {t:'中国互联网联合辟谣平台：湿毛巾只对初期火灾有用，不可凭它穿越浓烟（2025-11-28）',u:'https://www.piyao.org.cn/20251128/28e5fd10229b45c2b2fc6b666e63924e/c.html'},
@@ -801,6 +874,7 @@ let state={
  qDone:[],               // 走廊答题节点完成情况
  corT:90,                // 火场逃生倒计时
  waterDone:false,        // 防溺水特训是否完成
+ quakeDone:false,        // 地震避险特训是否完成
  items:[],               // 逃生道具
  misPress:0,             // 误判次数（按E无目标）
  fade:{a:0,dir:0,cb:null},
@@ -813,7 +887,8 @@ let fxToken=0;           // fx 代际令牌（演示模式防竞态）
 let evCur=null, evTick=null, crkTimer=null;
 let best=0; try{ best=parseInt(localStorage.getItem('dyh_best')||'0',10); }catch(e){ best=0; }
 let waterDoneFlag=false; try{ waterDoneFlag=localStorage.getItem('dyh_water')==='1'; }catch(e){ waterDoneFlag=false; }
-state.waterDone=waterDoneFlag;
+let quakeDoneFlag=false; try{ quakeDoneFlag=localStorage.getItem('dyh_quake')==='1'; }catch(e){ quakeDoneFlag=false; }
+state.waterDone=waterDoneFlag; state.quakeDone=quakeDoneFlag;
 
 /* ================= 工具与音频 ================= */
 const $=id=>document.getElementById(id);
@@ -859,7 +934,7 @@ function resetGame(){
   state.timeLeft=480; state.over=false; state.px=14; state.py=16; state.dir=0; state.moving=false;
   state.qDone=Array(QUIZ.length).fill(false); state.corT=90; smokeSlow=0;
   state.items=[]; state.misPress=0; state.fakeSeen=[]; state.fade={a:0,dir:0,cb:null};
-  state.waterDone=waterDoneFlag;
+  state.waterDone=waterDoneFlag; state.quakeDone=quakeDoneFlag;
   evCur=null; bgmStop();
   DOORS.forEach(d=>d.failed=false); GATES.forEach(g=>g.open=false);
   $('hint').style.display='none';
@@ -903,7 +978,7 @@ function startTimer(){
 }
 
 /* ================= 交互 ================= */
-const SOLID='#BDNTKCFERAVZOMJQG&~zjh';
+const SOLID='#BDNTKCFERAVZOMJQG&~zjd';
 function isDoorTile(x,y){ return state.scene==='corridor' && x===29 && y>=8 && y<=10; }
 function interact(){
   if(overlayOpen()) return;
@@ -971,7 +1046,7 @@ function openHazard(h){
     state.found.push(h.id); state.sceneFound++; state.score+=100; sFound();
     if(state.sceneFound>=curHazards.length){
       const sc=SCENES[state.scene];
-      if(sc.training){ setTimeout(()=>fadeOut(()=>{ finishTraining(); fadeIn(); }),500); }
+      if(sc.training){ setTimeout(()=>fadeOut(()=>{ finishTraining(sc.training); fadeIn(); }),500); }
       else if(sc.next){ toast('本场景排查完成！'); setTimeout(()=>fadeOut(()=>{ enterScene(sc.next); fadeIn(); }),500); }
       else setTimeout(()=>fadeOut(()=>{ fireTrigger(null); fadeIn(); }),500);
     }
@@ -1156,6 +1231,8 @@ function showResult(){
   else badges.push('<span class="badge miss">⚡ 极速逃生：余时≥40s（未达成）</span>');
   if(state.waterDone) badges.push('<span class="badge won">🌊 防溺水特训 · 已完成</span>');
   else badges.push('<span class="badge miss">🌊 防溺水特训：未挑战（标题页可进入）</span>');
+  if(state.quakeDone) badges.push('<span class="badge won">🏔 地震避险特训 · 已完成</span>');
+  else badges.push('<span class="badge miss">🏔 地震避险特训：未挑战（标题页可进入）</span>');
   state.score+=bonus;
   const max=baseMax+300;
   const pct=state.score/max;
@@ -1183,10 +1260,10 @@ function showResult(){
 }
 /* ================= 知识图鉴 ================= */
 function renderGallery(){
-  const total=TOTAL_H+WATERH.length+QUIZ.length;
-  const got=state.found.filter(id=>id<16).length+state.found.filter(id=>id>=16).length+state.qDone.filter(Boolean).length;
-  let html='<div style="color:#8fd3ff;margin:6px 0">🚨 隐患图鉴（'+state.found.length+'/'+(TOTAL_H+WATERH.length)+'）</div><div class="grid">';
-  [...HAZARDS,...LABH,...CLSH,...WATERH].forEach(h=>{
+  const total=TOTAL_H+WATERH.length+QUAKEH.length+QUIZ.length;
+  const got=state.found.length+state.qDone.filter(Boolean).length;
+  let html='<div style="color:#8fd3ff;margin:6px 0">🚨 隐患图鉴（'+state.found.length+'/'+(TOTAL_H+WATERH.length+QUAKEH.length)+'）</div><div class="grid">';
+  [...HAZARDS,...LABH,...CLSH,...WATERH,...QUAKEH].forEach(h=>{
     const un=state.found.includes(h.id);
     html+='<div class="gcard'+(un?'':' lock')+'"><div class="gi">'+h.icon+'</div><div class="gn">'+(un?h.name:'？？？')+'</div><div class="gd">'+(un?(HZ_DATA[h.id]||h.right):'排查发现后解锁')+'</div></div>';
   });
@@ -1391,9 +1468,9 @@ function renderAbout(){
   '<div class="sec" style="color:#8fd3ff">作品信息</div>'+
   '<div>《电与火之间——宿舍用电安全·像素逃生》｜AI类·交互作品（像素小游戏）｜2026年山东省大学生应急科普原创作品征集活动 · 主题：青春护航 应急有我</div>'+
   '<div class="sec" style="color:#8fd3ff">玩法说明</div>'+
-  '<div>移动：方向键 / WASD / 虚拟按键；调查：E / 空格 / A键。三个场景排查 16 处用电隐患 → 火情突发 → 火场逃生（10 道决策题 + 道具抉择 + 路线选择）→ 复盘结算；另设「🌊 防溺水特训」独立关口（水边 5 处风险）。支持简单/困难双难度、知识图鉴（31 张卡片）、成就徽章、演示模式。</div>'+
+  '<div>移动：方向键 / WASD / 虚拟按键；调查：E / 空格 / A键。三个场景排查 16 处用电隐患 → 火情突发 → 火场逃生（10 道决策题 + 道具抉择 + 路线选择）→ 复盘结算；另设「🌊 防溺水特训」与「🏔 地震避险特训」两个独立关口（各 5 处风险）。支持简单/困难双难度、知识图鉴（36 张卡片）、成就徽章、演示模式。</div>'+
   '<div class="sec" style="color:#8fd3ff">内容覆盖（对应征集方向）</div>'+
-  '<div>用火用电用气安全 ✓ ｜ 消防安全 ✓ ｜ 实验室安全 ✓ ｜ 校园安全 ✓ ｜ 自救互救技能 ✓ ｜ 防溺水 ✓ ｜ 事故灾难应对与逃生 ✓</div>'+
+  '<div>用火用电用气安全 ✓ ｜ 消防安全 ✓ ｜ 实验室安全 ✓ ｜ 校园安全 ✓ ｜ 自救互救技能 ✓ ｜ 防溺水 ✓ ｜ 防踩踏 ✓ ｜ 自然灾害应对（地震）✓ ｜ 事故灾难应对与逃生 ✓</div>'+
   '<div class="sec" style="color:#8fd3ff">创作思路</div>'+
   '<div>“排查隐患→隐患成灾→火场逃生”叙事闭环，让玩家亲手“酿成”火情再亲手逃生；双难度、道具抉择、随机坠落事件提升可玩性；全部知识点锚定法律法规与官方科普，条条可溯源。</div>'+
   '<div class="sec" style="color:#8fd3ff">AI 使用说明</div>'+
@@ -1558,35 +1635,51 @@ function drawQr(cv){
   c.fillStyle='#101a38';
   for(let y=0;y<n;y++) for(let x=0;x<n;x++) if(QR_ROWS[y][x]==='1') c.fillRect(off+x*s,off+y*s,s,s);
 }
-/* ================= 防溺水特训（独立关口） ================= */
-function startTraining(){
+/* ================= 特训关（防溺水 / 地震避险） ================= */
+function startTraining(key){
   resetGame();
   showOv('title',false); showOv('result',false);
   $('hint').style.display='none';
-  enterScene('water');
-  toast('🌊 防溺水特训开始：排查水边 5 处风险');
+  enterScene(key);
+  toast(key==='water'?'🌊 防溺水特训开始：排查水边 5 处风险':'🏔 地震避险特训开始：排查教学楼 5 处风险');
 }
-function finishTraining(){
-  state.waterDone=true; waterDoneFlag=true;
-  try{ localStorage.setItem('dyh_water','1'); }catch(e){}
-  const wasWater=$('water-done-line');
+function finishTraining(key){
+  if(key==='water'){
+    state.waterDone=true; waterDoneFlag=true;
+    try{ localStorage.setItem('dyh_water','1'); }catch(e){}
+    $('dlg-name').textContent='🌊 防溺水特训完成！';
+    $('dlg-body').innerHTML=
+      '<div class="sec">✅ 你已经掌握</div>'+
+      '<div>• 不私自下水、不擅自结伴下水（六不准第1、2条）<br>'+
+      '• 无安全设施、无救援人员的水域绝不下水（第4条）<br>'+
+      '• 同伴落水：先呼救、打110/119，用救生圈/竹竿岸上施救，<b>不擅自下水施救</b>（第6条）<br>'+
+      '• 水边湿滑处不追逐打闹</div>'+
+      '<div class="data-line">📊 数据一角：教育部明确指出，溺水是青少年意外死亡的“头号杀手”</div>'+
+      '<div class="src">依据：教育部《致全国中小学生家长的一封信》防溺水“六不准”；应急管理部防溺水科普</div>';
+  } else {
+    state.quakeDone=true; quakeDoneFlag=true;
+    try{ localStorage.setItem('dyh_quake','1'); }catch(e){}
+    $('dlg-name').textContent='🏔 地震避险特训完成！';
+    $('dlg-body').innerHTML=
+      '<div class="sec">✅ 你已经掌握</div>'+
+      '<div>• 震时：伏地、遮挡、手抓牢，躲到结实课桌下，远离玻璃窗与吊灯<br>'+
+      '• 疏散：不拥挤、不逆行、不推搡，听从指挥有序撤离（防踩踏）<br>'+
+      '• 不乘电梯、不跳楼，走安全楼梯<br>'+
+      '• 撤到开阔地后不返回建筑；被困时保存体力、敲击呼救、湿布捂口鼻</div>'+
+      '<div class="data-line">📊 数据一角：破坏性地震从感到震动到建筑破坏平均只有 12 秒</div>'+
+      '<div class="src">依据：应急管理部《地震避险自救互救常识》；中国地震局、教育部《中小学校地震应急避险疏散演练指南》</div>';
+  }
   bgmStart('win'); setTimeout(bgmStop,3000);
-  $('dlg-name').textContent='🌊 防溺水特训完成！';
-  $('dlg-body').innerHTML=
-    '<div class="sec">✅ 你已经掌握</div>'+
-    '<div>• 不私自下水、不擅自结伴下水（六不准第1、2条）<br>'+
-    '• 无安全设施、无救援人员的水域绝不下水（第4条）<br>'+
-    '• 同伴落水：先呼救、打110/119，用救生圈/竹竿岸上施救，<b>不擅自下水施救</b>（第6条）<br>'+
-    '• 水边湿滑处不追逐打闹</div>'+
-    '<div class="data-line">📊 数据一角：教育部明确指出，溺水是青少年意外死亡的“头号杀手”</div>'+
-    '<div class="src">依据：教育部《致全国中小学生家长的一封信》防溺水“六不准”；应急管理部防溺水科普</div>';
   showOv('dialog',true);
   $('dlg-ok').onclick=()=>{ showOv('dialog',false); showOv('title',true); syncControls(); updateBestLine(); };
 }
-$('btn-water').onclick=startTraining;
-$('btn-water2').onclick=()=>{ showOv('result',false); startTraining(); };
+$('btn-water').onclick=()=>startTraining('water');
+$('btn-water2').onclick=()=>{ showOv('result',false); startTraining('water'); };
+$('btn-quake').onclick=()=>startTraining('quake');
+$('btn-quake2').onclick=()=>{ showOv('result',false); startTraining('quake'); };
 function updateBestLine(){
-  $('best-line').textContent=(best>0?'🏅 最佳纪录：'+best+' 分':'')+(state.waterDone?'　｜　🌊 防溺水特训 ✅ 已完成':'');
+  $('best-line').textContent=(best>0?'🏅 最佳纪录：'+best+' 分':'')+
+    (state.waterDone?'　｜　🌊 防溺水 ✅':'')+(state.quakeDone?'　｜　🏔 地震避险 ✅':'');
 }
 
 /* ================= 输入 ================= */
@@ -1873,6 +1966,17 @@ function drawTile(x,y,ch){
     case '⌁': // 小火苗（可用灭火器扑灭）
       { const f2=((animT/6|0)+x+y)%2;
         R(6,2+f2,4,11,'#3a1414'); R(6,5+f2,4,5,'#ff8c42'); R(7,7+f2,2,3,'#ffe066'); R(5,13,6,2,'#2b0a0a'); }
+      break;
+    case 'd': // 电梯门
+      R(1,0,14,16,'#8a909e'); R(7,1,2,14,'#5a6478'); R(3,2,4,6,'#b8c2c8'); R(9,2,4,6,'#b8c2c8');
+      R(5,0,6,2,'#3a3f52'); R(6,0,1,1,'#ff5252'); R(8,0,1,1,'#3ddc84');
+      break;
+    case 'k': // 楼梯口
+      R(0,0,16,16,'#4a5266'); R(1,2,14,3,'#8a909e'); R(1,6,14,3,'#8a909e'); R(1,10,14,3,'#8a909e');
+      R(2,3,2,2,'#3ddc84'); R(1,14,14,2,'#2f3547');
+      break;
+    case 'l': // 吊灯（悬挂，可行走）
+      R(7,0,2,4,'#5a6478'); R(4,4,8,4,'#ffd166'); R(6,6,4,2,'#fff3b0'); R(5,8,6,1,'#ff8c42');
       break;
     case '!': // 坠落预警
       { const pu=((animT/10|0)+x)%2;
