@@ -105,6 +105,12 @@
   .badge { border:2px solid #3c4a7a; background:#0c1530; border-radius:8px; padding:4px 10px; font-size:12px; color:#9fb4d8; }
   .badge.won { border-color:#ffd166; color:#ffd166; background:#2a2410; }
   .badge.miss { border-color:#5a6478; color:#5a6478; }
+  /* 关于/暂停/案例：统一的文本框 */
+  #about, #pause, #case { background:rgba(4,6,16,.92); flex-direction:column; align-items:center; justify-content:center; padding:14px; }
+  #about .card, #pause .card, #case .card { width:100%; max-width:560px; background:#101a38; border:2px solid #8fd3ff; border-radius:10px; padding:14px; font-size:13px; line-height:1.7; max-height:92%; overflow:auto; }
+  .opt { word-break:break-all; }
+  .src-item a { color:#8fd3ff; word-break:break-all; text-decoration:none; }
+  .src-item a:active { color:#ffd166; }
   /* ============ 通用 ============ */
   .ai-badge { position:absolute; right:6px; bottom:6px; z-index:40; font-size:10px; color:#c9d4ee; background:rgba(10,14,30,.75); border:1px solid #4a5b8f; border-radius:4px; padding:2px 6px; pointer-events:none; }
   .hint-line { position:absolute; left:8px; top:30px; z-index:30; font-size:11px; color:#ffd166; background:rgba(10,14,30,.7); border:1px solid #5a4a2a; padding:3px 8px; border-radius:6px; max-width:70%; pointer-events:none; display:none; }
@@ -728,7 +734,15 @@ let best=0; try{ best=parseInt(localStorage.getItem('dyh_best')||'0',10); }catch
 
 /* ================= 工具与音频 ================= */
 const $=id=>document.getElementById(id);
-function showOv(id,b){ $(id).classList.toggle('show',b); }
+/* 弹窗打开时隐藏虚拟按键，避免遮挡答题按钮 */
+function syncControls(){
+  const busy=overlayOpen()||demoRun||$('title').classList.contains('show');
+  const pad=$('pad'), a=$('btnA'), p=$('btn-pause');
+  pad.style.display=busy?'none':'';
+  a.style.display=busy?'none':'';
+  p.style.display=busy?'none':'';
+}
+function showOv(id,b){ $(id).classList.toggle('show',b); syncControls(); }
 function overlayOpen(){ return state.fx!==null || ['title','dialog','quiz','fire','result','sources','gallery','about','pause','case'].some(id=>$(id).classList.contains('show')); }
 function toast(txt,ms){ const t=$('toast'); t.textContent=txt; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',ms||1800); }
 let AC=null, muted=false;
@@ -1100,7 +1114,7 @@ $('btn-gal-close').onclick=()=>showOv('gallery',false);
 $('best-line').textContent= best>0 ? '🏅 最佳纪录：'+best+' 分' : '';
 
 /* ================= 依据页 ================= */
-$('src-list').innerHTML=SOURCES.map(s=>'<div class="src-item"><b>'+s.t+'</b><br><span class="u">'+s.u+'</span></div>').join('');
+$('src-list').innerHTML=SOURCES.map(s=>'<div class="src-item"><b>'+s.t+'</b><br><a href="'+s.u+'" target="_blank" rel="noopener">'+s.u+'</a></div>').join('');
 $('btn-src2').onclick=()=>showOv('sources',true);
 $('btn-src0').onclick=()=>showOv('sources',true);
 $('btn-src-close').onclick=()=>showOv('sources',false);
@@ -1247,6 +1261,7 @@ function startDemo(){
   showOv('title',false);
   $('demo-sub').style.display='block';
   $('btn-demo-exit').style.display='block';
+  syncControls();
   buildDemo(); demoTick();
 }
 function demoFinished(){
@@ -1254,12 +1269,14 @@ function demoFinished(){
   $('demo-sub').style.display='none';
   $('btn-demo-exit').style.display='none';
   showOv('title',false);
+  syncControls();
 }
 function endDemoUI(){
   demoRun=false; clearTimeout(demoTimer); demoPending=false;
   $('demo-sub').style.display='none';
   $('btn-demo-exit').style.display='none';
   showOv('title',true); resetGame(); bgmStop();
+  syncControls();
 }
 $('btn-demo').onclick=startDemo;
 $('btn-demo-exit').onclick=endDemoUI;
@@ -1830,6 +1847,7 @@ function loop(){
 }
 requestAnimationFrame(loop);
 draw();
+syncControls();
 </script>
 </body>
 </html>
