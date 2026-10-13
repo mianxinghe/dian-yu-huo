@@ -368,7 +368,7 @@ const WATER=[
 "#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
 "#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
 "#zzzzzzzzzzzzzzzzzzzzzzzzzzzz#",
-"#............................#",
+"#.....a.....c......i.........#",
 "#....q...j......y............#",
 "#...........................q#",
 "#..h......................h..#",
@@ -572,6 +572,9 @@ const QUAKE=(function(){
       if(x===10&&y===10) c='M';                               // 讲台
       if(x===26&&y===3) c='d';                                // 电梯门
       if(x===26&&y===14) c='k';                               // 楼梯口
+      if(x===3&&y===1) c='a';                                 // 窗边碎玻璃/倾倒花盆
+      if((x===13&&y===10)||(x===24&&y===10)) c='i';           // 拥挤/奔跑人群
+      if((x===16&&y===10)||(x===22&&y===10)) c='c';           // 掉落物品（书包/手机）
       row+=c;
     }
     g.push(row);
@@ -1987,6 +1990,17 @@ function drawTile(x,y,ch){
       { const f2=((animT/6|0)+x+y)%2;
         R(6,2+f2,4,11,'#3a1414'); R(6,5+f2,4,5,'#ff8c42'); R(7,7+f2,2,3,'#ffe066'); R(5,13,6,2,'#2b0a0a'); }
       break;
+    case 'a': // 散落衣物/碎玻璃等现场痕迹
+      R(2,9,10,5,'#8a5a33'); R(3,7,4,3,'#4a90d9'); R(8,7,3,3,'#e07090'); R(2,9,10,1,'#a06b3f');
+      R(12,12,3,2,'#9fd3f2'); R(1,12,2,2,'#cfd8dc');
+      break;
+    case 'c': // 掉落的物品（书包/手机）
+      R(3,6,9,7,'#3f7fbf'); R(3,6,9,2,'#5a9bd8'); R(5,9,5,1,'#2f6ba0'); R(12,10,3,4,'#222'); R(13,11,1,2,'#aef0ae');
+      break;
+    case 'i': // 拥挤/奔跑的人群示意
+      R(2,4,4,10,'#4a5266'); R(9,3,4,10,'#3f4759'); R(3,2,2,2,'#ffd9b3'); R(10,1,2,2,'#ffd9b3');
+      R(2,13,4,2,'#2f3547'); R(9,12,4,2,'#2f3547'); R(1,8,1,4,'#ffd166');
+      break;
     case 'd': // 电梯门
       R(1,0,14,16,'#8a909e'); R(7,1,2,14,'#5a6478'); R(3,2,4,6,'#b8c2c8'); R(9,2,4,6,'#b8c2c8');
       R(5,0,6,2,'#3a3f52'); R(6,0,1,1,'#ff5252'); R(8,0,1,1,'#3ddc84');
@@ -2033,6 +2047,21 @@ function drawTile(x,y,ch){
 function drawCheck(x,y){ const px=x*TILE,py=y*TILE; ctx.strokeStyle='#3ddc84'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+4,py+8); ctx.lineTo(px+7,py+11); ctx.lineTo(px+12,py+4); ctx.stroke(); }
 function drawCross(x,y){ const px=x*TILE,py=y*TILE; ctx.strokeStyle='#ff5f5f'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px+4,py+4); ctx.lineTo(px+12,py+12); ctx.moveTo(px+12,py+4); ctx.lineTo(px+4,py+12); ctx.stroke(); }
 function drawMark(x,y){ const px=x*TILE, py=y*TILE-3+Math.round(Math.sin(animT/14)*2); ctx.fillStyle='#ffd166'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText('?',px+8,py+12); }
+/* 简单模式下未排查隐患的细微闪烁提示（非醒目问号，保留探索感） */
+function drawSparkle(x,y,seed){
+  const px=x*TILE, py=y*TILE, t=animT/14+seed*1.7;
+  ctx.save();
+  ctx.strokeStyle='#ffe9ad'; ctx.lineWidth=1;
+  ctx.globalAlpha=0.16+0.10*Math.sin(t);
+  ctx.beginPath(); ctx.arc(px+8,py+8,7,0,Math.PI*2); ctx.stroke();
+  for(let i=0;i<3;i++){
+    const a=t+i*2.09, ox=Math.cos(a)*5.6, oy=Math.sin(a*1.31)*5.6;
+    ctx.globalAlpha=0.30+0.28*Math.sin(a);
+    ctx.fillStyle='#fff6c8';
+    ctx.fillRect(px+8+ox-1,py+8+oy-1,2,2);
+  }
+  ctx.restore();
+}
 /* 靠近隐患时头顶提示 */
 function drawPrompt(){
   if(!SCENES[state.scene]||overlayOpen()) return;
@@ -2131,7 +2160,7 @@ function draw(){
   drawVignette();
   if(state.scene==='corridor') drawDoorLabels();
   if(SCENES[state.scene]){
-    curHazards.forEach(h=>{ if(state.found.includes(h.id)) drawCheck(h.x,h.y); });
+    curHazards.forEach(h=>{ if(state.found.includes(h.id)) drawCheck(h.x,h.y); else if(state.mode==='easy') drawSparkle(h.x,h.y,h.id); });
     drawPrompt();
   } else {
     DOORS.forEach(d=>{ if(d.failed) drawCross(d.x,d.y); });
